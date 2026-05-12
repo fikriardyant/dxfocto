@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DXF Utility</title>
+    
+    <script>
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/dxf-parser@1.1.2/dist/dxf-parser.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/geotiff"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        pama: {
+                            yellow: '#FFD600', 
+                            yellowDark: '#FBC02D',
+                            black: '#1A1A1A',
+                        },
+                        m3: {
+                            surface: '#FEF7FF',
+                            surfaceDark: '#141218',
+                            container: '#F3EDF7',
+                            containerDark: '#211F26',
+                            error: '#B3261E',
+                            errorDark: '#F2B8B5',
+                            outline: '#79747E',
+                            outlineDark: '#938F99'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Montserrat', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { transition: background-color 0.3s; overscroll-behavior: none; }
+        .toast-enter { animation: slideIn 0.3s ease-out forwards; }
+        .toast-leave { animation: slideOut 0.3s ease-in forwards; }
+        @keyframes slideIn { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideOut { from { transform: translateY(0); opacity: 1; } to { transform: translateY(100%); opacity: 0; } }
+        .toggle-checkbox:checked { right: 0; border-color: #FFD600; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #FFD600; }
+        
+        /* Jiggle Animation for Config Warning */
+        @keyframes jiggle {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+        .jiggle { animation: jiggle 0.4s ease-in-out; }
+        .highlight-red { color: #B3261E !important; text-shadow: 0 0 8px rgba(179,38,30,0.3); }
+        html.dark .highlight-red { color: #F2B8B5 !important; text-shadow: 0 0 8px rgba(242,184,181,0.3); }
+    </style>
+</head>
+<body class="h-[100dvh] bg-m3-surface dark:bg-m3-surfaceDark text-gray-800 dark:text-gray-100 flex flex-col font-sans overflow-hidden">
+
+    <button id="theme-toggle" type="button" class="fixed top-4 right-4 z-50 p-2 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm transition-colors shadow-md border border-gray-200 dark:border-gray-700 focus:outline-none">
+        <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+        <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+    </button>
+
+    <main class="flex-1 flex flex-col p-0 sm:p-4 md:p-6 w-full max-w-[1600px] mx-auto overflow-hidden">
+        <div class="flex-1 w-full bg-white dark:bg-gray-900 sm:rounded-[28px] shadow-lg flex flex-col overflow-hidden border-0 sm:border border-gray-100 dark:border-gray-800 relative transition-colors duration-300">
+            
+            <div class="shrink-0 bg-pama-black dark:bg-gray-800 p-6 sm:p-8 text-white relative overflow-hidden transition-colors duration-300">
+                <div class="relative z-10 flex justify-between items-start">
+                    <div>
+                        <h1 class="text-3xl sm:text-4xl font-heading font-bold tracking-tight">DXF Utility</h1>
+                        <p class="text-gray-300 mt-2 font-medium text-sm sm:text-base">Local & Global Coordinate system</p>
+                        <div class="mt-4 inline-block bg-white/10 px-4 py-1.5 rounded-full text-xs font-medium tracking-wide">Fikri A Freetime & AI</div>
+                    </div>
+                    
+                    <button id="top-config-btn" onclick="document.getElementById('config-file-input').click()" class="bg-white/10 hover:bg-white/20 p-2 sm:p-3 rounded-2xl transition-colors backdrop-blur-sm border border-white/10 text-white shadow-lg" title="Upload Config JS File">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </button>
+                    <input type="file" id="config-file-input" accept=".js" class="hidden">
+                </div>
+                <div class="absolute -bottom-32 -right-16 w-96 h-96 bg-pama-yellow opacity-40 dark:opacity-20 rounded-full blur-3xl pointer-events-none"></div>
+            </div>
+
+            <div class="shrink-0 flex border-b border-m3-outline/20 dark:border-m3-outlineDark/20 bg-m3-surface dark:bg-m3-surfaceDark">
+                <button id="tab-btn-viewer" class="flex-1 py-4 text-center font-bold text-sm sm:text-base text-pama-yellow border-b-4 border-pama-yellow transition-colors focus:outline-none">Design Viewer</button>
+                <button id="tab-btn-converter" class="flex-1 py-4 text-center font-bold text-sm sm:text-base text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border-b-4 border-transparent transition-colors focus:outline-none">Local Coordinate Conversion</button>
+            </div>
+
+            <div id="tab-content-viewer" class="flex-1 relative bg-[#111111] overflow-hidden flex">
+                <canvas id="viewer-canvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+                
+                <div class="absolute top-4 left-4 max-w-xs z-10 flex flex-col gap-3 pointer-events-none">
+                    <button id="viewer-north-btn" class="bg-gray-800 hover:bg-gray-700 text-white p-3 w-12 h-12 rounded-2xl shadow-lg transition-colors border border-gray-700 flex items-center justify-center pointer-events-auto relative" title="Toggle Rotation Lock">
+                        <svg id="compass-arrow" class="w-6 h-6 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                        <div id="compass-lock" class="absolute -bottom-1 -right-1 bg-gray-900 rounded-full p-0.5 border border-gray-700 text-pama-yellow"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" fill-rule="evenodd"></path></svg></div>
+                    </button>
+                    <div id="viewer-file-list" class="flex flex-col gap-2 pointer-events-none"></div>
+                </div>
+
+                <div id="entity-info-card" class="absolute top-4 right-4 w-72 bg-m3-surface dark:bg-m3-surfaceDark rounded-[24px] shadow-2xl border border-m3-outline/20 dark:border-m3-outlineDark/20 p-5 z-20 hidden transition-all transform origin-top-right">
+                    <div class="flex justify-between items-center mb-4 border-b border-m3-outline/20 dark:border-m3-outlineDark/20 pb-3">
+                        <h4 class="font-heading font-bold text-base text-gray-900 dark:text-white flex items-center gap-2"><span class="bg-cyan-100 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400 p-1 rounded-md"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></span> Element Details</h4>
+                        <button id="close-entity-info" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-m3-container dark:bg-m3-containerDark hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full p-1.5 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                    </div>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between items-center"><span class="text-gray-500 dark:text-gray-400">Type:</span> <span id="ei-type" class="font-semibold text-gray-800 dark:text-white bg-m3-container dark:bg-m3-containerDark px-2 py-0.5 rounded text-xs uppercase tracking-wide"></span></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-500 dark:text-gray-400">Length:</span> <span class="font-semibold text-gray-800 dark:text-white"><span id="ei-length"></span> m</span></div>
+                        <div id="ei-elevation-container" class="flex justify-between items-center hidden"><span class="text-gray-500 dark:text-gray-400">Elevation:</span> <span class="font-mono font-bold text-pama-yellowDark dark:text-pama-yellow bg-pama-yellow/10 px-2 py-0.5 rounded">Z: <span id="ei-elevation">0.00</span></span></div>
+                        <div id="ei-vertex-container" class="flex flex-col gap-3 pt-3 border-t border-m3-outline/20 dark:border-m3-outlineDark/20 mt-2 hidden">
+                            <div class="flex justify-between items-center"><span class="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase tracking-wider">Vertex <span id="ei-v-idx" class="text-gray-800 dark:text-white">1</span> of <span id="ei-v-total">X</span></span><span id="ei-v-z" class="font-mono font-bold text-pama-yellowDark dark:text-pama-yellow bg-pama-yellow/10 px-2 py-0.5 rounded">Z: 0.00</span></div>
+                            <div class="flex gap-2"><button id="ei-btn-prev" class="flex-1 bg-m3-container dark:bg-m3-containerDark hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 rounded-xl text-xs font-bold transition-colors">Prev</button><button id="ei-btn-next" class="flex-1 bg-pama-yellow hover:bg-pama-yellowDark text-pama-black py-2 rounded-xl text-xs font-bold transition-colors shadow-sm">Next</button></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="absolute bottom-6 right-6 flex flex-col gap-4 z-10">
+                    <button id="viewer-zoom-btn" class="bg-gray-800 hover:bg-gray-700 text-white p-4 rounded-2xl shadow-lg transition-colors border border-gray-700 flex items-center justify-center" title="Zoom Extents">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                    </button>
+                    <button id="viewer-gps-btn" class="bg-gray-800 hover:bg-gray-700 text-white p-4 rounded-2xl shadow-lg transition-colors border border-gray-700 flex items-center justify-center" title="Toggle GPS Location">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </button>
+                    <input type="file" id="viewer-file-input" accept=".dxf,.tif,.tiff" class="hidden" multiple>
+                    <button id="viewer-add-btn" class="bg-pama-yellow hover:bg-pama-yellowDark text-pama-black p-4 rounded-2xl shadow-xl transition-transform hover:scale-105 flex items-center justify-center" title="Add DXF/TIFF to View">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div id="tab-content-converter" class="hidden flex-1 overflow-y-auto p-6 sm:p-8 space-y-6 bg-m3-surface dark:bg-m3-surfaceDark">
+                <div class="max-w-4xl mx-auto space-y-6">
+                    <div class="bg-m3-container dark:bg-m3-containerDark rounded-[24px] p-6 border border-m3-outline/10 dark:border-m3-outlineDark/10">
+                        <h2 class="text-lg font-heading font-bold mb-4 text-pama-black dark:text-white flex items-center gap-3">
+                            <span class="bg-pama-yellow text-pama-black w-7 h-7 rounded-full flex items-center justify-center text-sm shadow-sm">1</span> Upload Local DXF File
+                        </h2>
+                        <div id="drop-zone" class="border-2 border-dashed border-m3-outline/30 dark:border-m3-outlineDark/40 rounded-[20px] p-8 text-center cursor-pointer hover:bg-pama-yellow/10 dark:hover:bg-pama-yellow/10 hover:border-pama-yellow transition-all duration-300">
+                            <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                            <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Click to upload or drag Local DXF here</p>
+                            <input type="file" id="file-input" accept=".dxf" class="hidden">
+                        </div>
+                        <div id="file-info" class="hidden mt-4 p-4 bg-m3-surface dark:bg-m3-surfaceDark border border-m3-outline/20 dark:border-m3-outlineDark/20 text-pama-black dark:text-white rounded-[16px] flex justify-between items-center text-sm shadow-sm transition-colors">
+                            <div class="flex items-center gap-3 overflow-hidden">
+                                <div class="bg-pama-yellow/30 p-2 rounded-full"><svg class="w-5 h-5 text-pama-yellowDark" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path></svg></div>
+                                <span id="file-name" class="font-semibold truncate"></span>
+                            </div>
+                            <button id="remove-file" class="text-gray-400 hover:text-m3-error dark:hover:text-m3-errorDark hover:bg-red-50 dark:hover:bg-red-900/30 w-8 h-8 rounded-full flex items-center justify-center transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                        </div>
+                    </div>
+
+                    <div id="feature-section" class="bg-m3-container dark:bg-m3-containerDark rounded-[24px] p-6 border border-m3-outline/10 dark:border-m3-outlineDark/10 hidden">
+                        <h2 class="text-lg font-heading font-bold mb-4 text-pama-black dark:text-white flex items-center gap-3">
+                            <span class="bg-pama-yellow text-pama-black w-7 h-7 rounded-full flex items-center justify-center text-sm shadow-sm">2</span> Modifications
+                        </h2>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <button id="preview-btn" class="flex-1 bg-m3-surface dark:bg-m3-surfaceDark border border-m3-outline/20 dark:border-m3-outlineDark/20 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-100 font-semibold py-3 px-6 rounded-full transition-all flex justify-center items-center gap-2 shadow-sm">
+                                <svg class="w-5 h-5 text-pama-yellowDark" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg> Quick Preview
+                            </button>
+                            <div class="flex-1 bg-m3-surface dark:bg-m3-surfaceDark border border-m3-outline/20 dark:border-m3-outlineDark/20 rounded-[20px] p-3 px-5 flex items-center justify-between shadow-sm transition-colors">
+                                <div class="flex flex-col"><span class="text-sm font-bold text-gray-800 dark:text-gray-100">Elevation Annotation</span><span class="text-xs text-gray-500 dark:text-gray-400">Insert Z text labels</span></div>
+                                <div class="relative inline-block w-12 mr-2 align-middle select-none">
+                                    <input type="checkbox" id="toggle-annotation" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-transform duration-300 ease-in-out"/>
+                                    <label for="toggle-annotation" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer transition-colors duration-300 ease-in-out"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-m3-container dark:bg-m3-containerDark rounded-[24px] p-6 border border-m3-outline/10 dark:border-m3-outlineDark/10">
+                        <h2 class="text-lg font-heading font-bold mb-4 text-pama-black dark:text-white flex items-center gap-3">
+                            <span id="step-3-badge" class="bg-pama-yellow text-pama-black w-7 h-7 rounded-full flex items-center justify-center text-sm shadow-sm">2</span> Export Settings
+                        </h2>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <div class="w-full sm:w-1/3">
+                                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Format</label>
+                                <select id="export-format" class="w-full px-4 py-3 border border-m3-outline/20 dark:border-m3-outlineDark/20 rounded-2xl bg-m3-surface dark:bg-m3-surfaceDark text-gray-800 dark:text-white font-medium focus:ring-2 focus:ring-pama-yellow focus:border-transparent outline-none appearance-none transition-colors">
+                                    <option value="kmz">Google Earth (.KMZ)</option>
+                                    <option value="kml">Google Earth (.KML)</option>
+                                    <option value="dxf">Global AutoCAD (.DXF)</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col w-full sm:w-2/3 justify-end pt-2 sm:pt-0">
+                                <div class="flex gap-3 w-full">
+                                    <button id="clear-btn" class="w-1/3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-full transition-colors">Reset</button>
+                                    <button id="convert-btn" disabled class="w-2/3 bg-pama-yellow hover:bg-pama-yellowDark disabled:bg-gray-200 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:cursor-not-allowed text-pama-black font-bold py-3 px-6 rounded-full transition-all flex justify-center items-center gap-2 shadow-sm hover:shadow-md">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Export
+                                    </button>
+                                </div>
+                                <p id="converter-config-warning" class="hidden mt-3 text-sm font-bold text-m3-error dark:text-m3-errorDark text-center sm:text-right transition-all">⚠️ Please upload a JS config file (top right icon) to convert!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="shrink-0 w-full bg-m3-surface dark:bg-m3-surfaceDark border-t border-m3-outline/20 dark:border-m3-outlineDark/20 py-3 sm:py-4 transition-colors">
+        <div class="max-w-5xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="text-xl font-heading font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1"><span class="text-blue-500">D</span><span class="text-red-500">X</span><span class="text-pama-yellow">F</span> <span class="text-gray-500 ml-1 font-normal">Utility</span></div>
+            <nav class="flex flex-wrap items-center justify-center md:justify-end gap-x-4 sm:gap-x-6 gap-y-3 text-sm font-medium text-gray-600 dark:text-gray-400">
+                <button onclick="openFooterModal('Contact', '<div class=&quot;flex flex-col items-center gap-1 text-center&quot;><div class=&quot;text-lg font-bold text-gray-900 dark:text-white&quot;>Fikri Ardyantoro</div><a href=&quot;mailto:fikri.ardyantoro@gmail.com&quot; class=&quot;text-blue-500 hover:underline transition-colors&quot;>fikri.ardyantoro@gmail.com</a><a href=&quot;https://wa.me/6281977080999&quot; target=&quot;_blank&quot; class=&quot;mt-2 px-3 py-1.5 bg-m3-surface dark:bg-m3-surfaceDark hover:bg-gray-50 dark:hover:bg-gray-700 border border-m3-outline/20 dark:border-m3-outlineDark/20 rounded-xl font-mono text-sm shadow-sm text-blue-500 hover:underline transition-colors&quot;>081977080999</a></div>')" class="hover:text-pama-yellow transition-colors">Contact</button>
+                <button onclick="openFooterModal('Credit', '<div class=&quot;flex flex-col gap-3&quot;><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Gigih Pambudi</div><div class=&quot;text-xs text-gray-500&quot;>Tester</div></div><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Rendra</div><div class=&quot;text-xs text-gray-500&quot;>Tester on Global Mapper</div></div><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Taufik</div><div class=&quot;text-xs text-gray-500&quot;>Tester</div></div><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Thalya Anggita</div><div class=&quot;text-xs text-gray-500&quot;>Supporter</div></div></div>')" class="hover:text-pama-yellow transition-colors">Credit</button>
+                <button onclick="openFooterModal('Request More Feature', '<div class=&quot;flex flex-col items-center gap-1 text-center&quot;><div class=&quot;text-lg font-bold text-gray-900 dark:text-white&quot;>Fikri Ardyantoro</div><a href=&quot;mailto:fikri.ardyantoro@gmail.com&quot; class=&quot;text-blue-500 hover:underline transition-colors&quot;>fikri.ardyantoro@gmail.com</a><a href=&quot;https://wa.me/6281977080999&quot; target=&quot;_blank&quot; class=&quot;mt-2 px-3 py-1.5 bg-m3-surface dark:bg-m3-surfaceDark hover:bg-gray-50 dark:hover:bg-gray-700 border border-m3-outline/20 dark:border-m3-outlineDark/20 rounded-xl font-mono text-sm shadow-sm text-blue-500 hover:underline transition-colors&quot;>081977080999</a></div>')" class="hover:text-pama-yellow transition-colors">Request More Feature</button>
+                <button onclick="openFooterModal('Traktir Kopi Buat Lembur', '<div class=&quot;flex flex-col items-center gap-4 text-center w-full&quot;><div class=&quot;text-6xl mb-1 drop-shadow-md&quot;>☕</div><div class=&quot;w-full bg-m3-surface dark:bg-m3-surfaceDark p-5 rounded-2xl border border-m3-outline/20 dark:border-m3-outlineDark/20 shadow-sm&quot;><div class=&quot;text-xs uppercase tracking-wider font-bold text-gray-500 mb-2&quot;>Shopeepay</div><div class=&quot;text-2xl font-mono font-bold text-gray-800 dark:text-white block&quot;>081977080999</div></div><div class=&quot;w-full bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-100 dark:border-blue-800/30&quot;><p class=&quot;text-sm font-medium text-blue-800 dark:text-blue-300&quot;>Atau bisa mutasikan ke <span class=&quot;font-bold&quot;>JIEP</span><br>agar lebih bahagia 🏙️</p></div></div>')" class="hover:text-pama-yellow transition-colors">Traktir Kopi Buat Lembur</button>
+            </nav>
+        </div>
+    </footer>
+
+    <div id="footer-modal" class="fixed inset-0 bg-black/60 dark:bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-m3-surface dark:bg-m3-surfaceDark rounded-[28px] max-w-sm w-full p-6 sm:p-8 shadow-2xl relative transition-transform transform scale-100 max-h-full overflow-y-auto">
+            <button onclick="closeFooterModal()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-m3-container dark:bg-m3-containerDark hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full p-2 transition-colors z-10"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            <h3 id="footer-modal-title" class="text-xl sm:text-2xl font-heading font-bold text-gray-900 dark:text-white mb-6 text-center px-10">Title</h3>
+            <div id="footer-modal-content" class="text-base text-gray-600 dark:text-gray-300 leading-relaxed"></div>
+        </div>
+    </div>
+
+    <div id="coord-prompt-modal" class="fixed inset-0 bg-black/60 dark:bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-m3-surface dark:bg-m3-surfaceDark rounded-[28px] max-w-sm w-full p-8 shadow-2xl text-center max-h-full overflow-y-auto">
+            <div class="bg-pama-yellow/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"><svg class="w-8 h-8 text-pama-yellowDark" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+            <h3 class="text-xl font-heading font-bold text-gray-900 dark:text-white mb-2">Select Coordinate System</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-8">Is the file you're adding in Local or Global (UTM 50N) format?</p>
+            <div class="flex gap-3 justify-center">
+                <button id="prompt-btn-local" class="flex-1 bg-pama-yellow hover:bg-pama-yellowDark text-pama-black font-bold py-3 px-4 rounded-full transition-colors shadow-sm hover:shadow-md">Local</button>
+                <button id="prompt-btn-global" class="flex-1 bg-gray-800 hover:bg-gray-950 dark:bg-m3-containerDark dark:hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-full transition-colors shadow-sm hover:shadow-md">Global (UTM)</button>
+            </div>
+            
+            <p id="viewer-config-warning" class="hidden mt-4 text-sm font-bold text-m3-error dark:text-m3-errorDark transition-all">⚠️ Please upload a JS config file (top right icon) first!</p>
+
+            <button id="prompt-btn-cancel" class="mt-6 text-sm font-semibold text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">Cancel</button>
+        </div>
+    </div>
+
+    <div id="dxf-modal" class="fixed inset-0 bg-black/60 dark:bg-black/80 z-50 hidden flex flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-m3-surface dark:bg-m3-surfaceDark rounded-[28px] overflow-hidden shadow-2xl w-full max-w-4xl flex flex-col transition-colors" style="max-height: 90vh;">
+            <div class="bg-m3-surface dark:bg-m3-surfaceDark px-6 py-4 flex justify-between items-center border-b border-m3-outline/20 dark:border-m3-outlineDark/20">
+                <h3 class="text-lg font-heading font-bold text-gray-900 dark:text-white flex items-center gap-3"><span class="bg-pama-yellow/20 p-2 rounded-full text-pama-yellowDark"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></span> Quick Preview</h3>
+                <button id="close-modal" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-m3-container dark:bg-m3-containerDark rounded-full p-2 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+            <div class="p-2 bg-[#111111] flex-1 overflow-hidden relative" style="min-height: 60vh;">
+                <button id="zoom-extents-btn" class="absolute top-4 right-4 bg-gray-800 text-white p-3 rounded-xl shadow-lg hover:bg-gray-700 transition-colors z-10 border border-gray-700" title="Zoom Extents"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg></button>
+                <canvas id="dxf-canvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+    <script>
+        // --- THEME TOGGLE LOGIC ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) { themeToggleLightIcon.classList.remove('hidden'); } else { themeToggleDarkIcon.classList.remove('hidden'); }
+        themeToggleBtn.addEventListener('click', function() {
+            themeToggleDarkIcon.classList.toggle('hidden'); themeToggleLightIcon.classList.toggle('hidden');
+            if (localStorage.getItem('color-theme')) {
+                if (localStorage.getItem('color-theme') === 'light') { document.documentElement.classList.add('dark'); localStorage.setItem('color-theme', 'dark'); } 
+                else { document.documentElement.classList.remove('dark'); localStorage.setItem('color-theme', 'light'); }
+            } else {
+                if (document.documentElement.classList.contains('dark')) { document.documentElement.classList.remove('dark'); localStorage.setItem('color-theme', 'light'); } 
+                else { document.documentElement.classList.add('dark'); localStorage.setItem('color-theme', 'dark'); }
+            }
+        });
+
+        proj4.defs("EPSG:32650", "+proj=utm +zone=50 +datum=WGS84 +units=m +no_defs");
+        proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
+
+        // --- SHARED UTILS ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = { error: 'bg-m3-error dark:bg-m3-errorDark text-white dark:text-gray-900', success: 'bg-gray-900 dark:bg-white text-white dark:text-gray-900', info: 'bg-gray-800 dark:bg-gray-100 text-white dark:text-gray-900', warning: 'bg-pama-yellow text-pama-black' };
+            toast.className = `px-6 py-4 rounded-2xl shadow-xl text-sm font-medium toast-enter flex items-center gap-3 pointer-events-auto ${colors[type]}`;
+            toast.innerHTML = type === 'success' ? `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> <span>${message}</span>` : `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.replace('toast-enter', 'toast-leave'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        const footerModal = document.getElementById('footer-modal');
+        const footerModalTitle = document.getElementById('footer-modal-title');
+        const footerModalContent = document.getElementById('footer-modal-content');
+        function openFooterModal(title, content) { footerModalTitle.textContent = title; footerModalContent.innerHTML = content; footerModal.classList.remove('hidden'); }
+        function closeFooterModal() { footerModal.classList.add('hidden'); }
+
+        // --- DYNAMIC CONFIG LOADER LOGIC ---
+        document.getElementById('config-file-input').addEventListener('change', (e) => {
+            if (!e.target.files.length) return;
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const script = document.createElement('script');
+                    script.textContent = evt.target.result;
+                    document.head.appendChild(script);
+                    
+                    setTimeout(() => {
+                        if (typeof window.transformLocalToGlobal === 'function') {
+                            showToast('Configuration loaded successfully!', 'success');
+                            // Clear warnings if they were showing
+                            document.getElementById('viewer-config-warning').classList.add('hidden');
+                            document.getElementById('converter-config-warning').classList.add('hidden');
+                        } else {
+                            showToast('Invalid config.js file', 'error');
+                        }
+                    }, 50);
+                } catch(err) { showToast('Failed to load config', 'error'); }
+            };
+            reader.readAsText(file);
+            e.target.value = ''; 
+        });
+
+        function convertUtmToLatLng(easting, northing) { return proj4("EPSG:32650", "EPSG:4326", [easting, northing]); }
+
+        const aciPalette = ["000000", "FF0000", "FFFF00", "00FF00", "00FFFF", "0000FF", "FF00FF", "FFFFFF", "414141", "808080", "FF0000", "FFAAAA", "BD0000", "BD7E7E", "810000", "815656", "680000", "684545", "4F0000", "4F3535", "FF3F00", "FFBFAA", "BD2E00", "BD8D7E", "811F00", "816056", "681900", "684D45", "4F1300", "4F3B35", "FF7F00", "FFD4AA", "BD5E00", "BD9D7E", "814000", "816B56", "683400", "685645", "4F2700", "4F4235", "FFBF00", "FFEAAA", "BD8D00", "BDAE7E", "816000", "817656", "684D00", "685F45", "4F3B00", "4F4835", "FFFF00", "FFFFAA", "BDBD00", "BDBD7E", "818100", "818156", "686800", "686845", "4F4F00", "4F4F35", "BFFF00", "EAFFAA", "8DBD00", "AEBD7E", "608100", "768156", "4D6800", "5F6845", "3B4F00", "484F35", "7FFF00", "D4FFAA", "5EBD00", "9DBD7E", "408100", "6B8156", "346800", "566845", "274F00", "424F35", "3FFF00", "BFFFAA", "2EBD00", "8DBD7E", "1F8100", "608156", "196800", "4D6845", "134F00", "3B4F35", "00FF00", "AAFFAA", "00BD00", "7EBD7E", "008100", "568156", "006800", "456845", "004F00", "354F35", "00FF3F", "AAFFBF", "00BD2E", "7EBD8D", "00811F", "568160", "006819", "45684D", "004F13", "354F3B", "00FF7F", "AAFFD4", "00BD5E", "7EBD9D", "008140", "56816B", "006834", "456856", "004F27", "354F42", "00FFBF", "AAFFEA", "00BD8D", "7EBDAE", "008160", "568176", "00684D", "45685F", "004F3B", "354F48", "00FFFF", "AAFFFF", "00BDBD", "7EBDBD", "008181", "568181", "006868", "456868", "004F4F", "354F4F", "00BFFF", "AAEAFF", "008DBD", "7EAEBD", "006081", "567681", "004D68", "455F68", "003B4F", "35484F", "007FFF", "AAD4FF", "005EBD", "7E9DBD", "004081", "566B81", "003468", "455668", "00274F", "35424F", "003FFF", "AABFFF", "002EBD", "7E8DBD", "001F81", "566081", "001968", "454D68", "00134F", "353B4F", "0000FF", "AAAAFF", "0000BD", "7E7EBD", "000081", "565681", "000068", "454568", "00004F", "35354F", "3F00FF", "BFAAFF", "2E00BD", "8D7EBD", "1F0081", "605681", "190068", "4D4568", "13004F", "3B354F", "7F00FF", "D4AAFF", "5E00BD", "9D7EBD", "400081", "6B5681", "340068", "564568", "27004F", "42354F", "BF00FF", "EAAAFF", "8D00BD", "AE7EBD", "600081", "765681", "4D0068", "5F4568", "3B004F", "48354F", "FF00FF", "FFAAFF", "BD00BD", "BD7EBD", "810081", "815681", "680068", "684568", "4F004F", "4F354F", "FF00BF", "FFAAEA", "BD008D", "BD7EAE", "810060", "815676", "68004D", "68455F", "4F003B", "4F3548", "FF007F", "FFAAD4", "BD005E", "BD7E9D", "810040", "81566B", "680034", "684556", "4F0027", "4F3542", "FF003F", "FFAABF", "BD002E", "BD7E8D", "81001F", "815660", "680019", "68454D", "4F0013", "4F353B", "333333", "505050", "696969", "828282", "9C9C9C", "B5B5B5", "CECECE", "E7E7E7", "FFFFFF"];
+
+        function extractCanvasHexColor(entity, rawLayers) {
+            const layers = {}; for (const key in rawLayers) layers[key.toUpperCase()] = rawLayers[key];
+            if (entity.trueColor !== undefined) { const r = (entity.trueColor >> 16) & 0xFF; const g = (entity.trueColor >> 8) & 0xFF; const b = entity.trueColor & 0xFF; return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`; }
+            let aci = entity.colorNumber !== undefined ? entity.colorNumber : entity.colorIndex;
+            if (aci === 256 || aci === undefined) { const layerName = (entity.layer || '').toUpperCase(); if (layerName && layers[layerName]) { const layer = layers[layerName]; if (layer.trueColor !== undefined) { const r = (layer.trueColor >> 16) & 0xFF; const g = (layer.trueColor >> 8) & 0xFF; const b = layer.trueColor & 0xFF; return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`; } aci = layer.colorNumber !== undefined ? layer.colorNumber : layer.colorIndex; } }
+            if (aci === 0) aci = 7; let hexColor = (aci >= 1 && aci <= 255) ? aciPalette[aci] : "FFFFFF"; return `#${hexColor}`;
+        }
+
+        // --- TABS LOGIC ---
+        const tabConverterBtn = document.getElementById('tab-btn-converter');
+        const tabViewerBtn = document.getElementById('tab-btn-viewer');
+        const tabConverterContent = document.getElementById('tab-content-converter');
+        const tabViewerContent = document.getElementById('tab-content-viewer');
+
+        tabConverterBtn.addEventListener('click', () => {
+            tabConverterBtn.classList.add('text-pama-yellow', 'border-pama-yellow'); tabConverterBtn.classList.remove('text-gray-500', 'border-transparent', 'dark:text-gray-400');
+            tabViewerBtn.classList.remove('text-pama-yellow', 'border-pama-yellow'); tabViewerBtn.classList.add('text-gray-500', 'border-transparent', 'dark:text-gray-400');
+            tabConverterContent.classList.remove('hidden'); tabViewerContent.classList.remove('flex'); tabViewerContent.classList.add('hidden');
+        });
+
+        tabViewerBtn.addEventListener('click', () => {
+            tabViewerBtn.classList.add('text-pama-yellow', 'border-pama-yellow'); tabViewerBtn.classList.remove('text-gray-500', 'border-transparent', 'dark:text-gray-400');
+            tabConverterBtn.classList.remove('text-pama-yellow', 'border-pama-yellow'); tabConverterBtn.classList.add('text-gray-500', 'border-transparent', 'dark:text-gray-400');
+            tabViewerContent.classList.remove('hidden'); tabViewerContent.classList.add('flex'); tabConverterContent.classList.add('hidden');
+            drawViewerCanvas(); if(viewerScale === 1 && viewerLoadedDxfs.length > 0) zoomExtentsViewer(); 
+        });
+
+        // --- CONVERTER LOGIC ---
+        let currentDxfString = null; let currentFileName = null; let parsedDxfData = null; 
+        document.getElementById('drop-zone').addEventListener('click', () => document.getElementById('file-input').click());
+        document.getElementById('file-input').addEventListener('change', (e) => { if (e.target.files.length) handleConverterFile(e.target.files[0]); });
+
+        function handleConverterFile(file) {
+            if (!file || !file.name.toLowerCase().endsWith('.dxf')) return showToast('Upload valid .dxf', 'error');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentDxfString = e.target.result;
+                try {
+                    parsedDxfData = new window.DxfParser().parseSync(currentDxfString);
+                    currentFileName = file.name;
+                    document.getElementById('file-name').textContent = file.name;
+                    document.getElementById('drop-zone').classList.add('hidden');
+                    document.getElementById('file-info').classList.remove('hidden');
+                    document.getElementById('feature-section').classList.remove('hidden');
+                    document.getElementById('step-3-badge').textContent = '3';
+                    document.getElementById('convert-btn').removeAttribute('disabled');
+                    showToast('DXF loaded', 'success');
+                } catch(err) { showToast('Parse failed', 'error'); }
+            };
+            reader.readAsText(file);
+        }
+
+        document.getElementById('remove-file').addEventListener('click', clearConverter);
+        document.getElementById('clear-btn').addEventListener('click', clearConverter);
+
+        function clearConverter() {
+            currentDxfString = null; currentFileName = null; parsedDxfData = null;
+            document.getElementById('file-input').value = '';
+            document.getElementById('drop-zone').classList.remove('hidden');
+            document.getElementById('file-info').classList.add('hidden');
+            document.getElementById('feature-section').classList.add('hidden');
+            document.getElementById('step-3-badge').textContent = '2';
+            document.getElementById('convert-btn').setAttribute('disabled', 'true');
+        }
+
+        // Preview Modal Logic (Converter Tab)
+        const previewBtn = document.getElementById('preview-btn');
+        const dxfModal = document.getElementById('dxf-modal');
+        const dxfCanvas = document.getElementById('dxf-canvas');
+        
+        let convViewScale = 1, convViewOffsetX = 0, convViewOffsetY = 0, convMinX = 0, convMinY = 0, convMaxX = 0, convMaxY = 0, convDragging = false, convLastX = 0, convLastY = 0;
+
+        previewBtn.addEventListener('click', () => { dxfModal.classList.remove('hidden'); initConverterPreview(); });
+        document.getElementById('close-modal').addEventListener('click', () => dxfModal.classList.add('hidden'));
+
+        function initConverterPreview() {
+            if (!parsedDxfData || !parsedDxfData.entities) return;
+            dxfCanvas.width = dxfCanvas.parentElement.clientWidth; dxfCanvas.height = dxfCanvas.parentElement.clientHeight;
+            convMinX = Infinity; convMinY = Infinity; convMaxX = -Infinity; convMaxY = -Infinity;
+            parsedDxfData.entities.forEach(ent => {
+                if (ent.type === 'LINE' || ent.type === 'LWPOLYLINE' || ent.type === 'POLYLINE') {
+                    ent.vertices.forEach(v => { if (v.x < convMinX) convMinX = v.x; if (v.x > convMaxX) convMaxX = v.x; if (v.y < convMinY) convMinY = v.y; if (v.y > convMaxY) convMaxY = v.y; });
+                }
+            });
+            if (convMinX === Infinity) return;
+            zoomExtentsConverter();
+        }
+
+        function zoomExtentsConverter() {
+            const width = convMaxX - convMinX, height = convMaxY - convMinY, padding = 20;
+            convViewScale = Math.min((dxfCanvas.width - padding*2) / width, (dxfCanvas.height - padding*2) / height);
+            convViewOffsetX = (dxfCanvas.width - width * convViewScale) / 2;
+            convViewOffsetY = (dxfCanvas.height - height * convViewScale) / 2;
+            drawConverterPreview();
+        }
+        document.getElementById('zoom-extents-btn').addEventListener('click', zoomExtentsConverter);
+
+        function drawConverterPreview() {
+            const ctx = dxfCanvas.getContext('2d');
+            ctx.clearRect(0, 0, dxfCanvas.width, dxfCanvas.height);
+            if (convMinX === Infinity) return;
+            const rawLayers = parsedDxfData.tables?.layer?.layers || {};
+            ctx.lineWidth = 1;
+            parsedDxfData.entities.forEach(ent => {
+                if (ent.type === 'LINE' || ent.type === 'LWPOLYLINE' || ent.type === 'POLYLINE') {
+                    ctx.strokeStyle = extractCanvasHexColor(ent, rawLayers); ctx.beginPath();
+                    if (ent.type === 'LINE') {
+                        let v1 = ent.vertices[0], v2 = ent.vertices[1];
+                        ctx.moveTo(convViewOffsetX + (v1.x - convMinX) * convViewScale, dxfCanvas.height - (convViewOffsetY + (v1.y - convMinY) * convViewScale));
+                        ctx.lineTo(convViewOffsetX + (v2.x - convMinX) * convViewScale, dxfCanvas.height - (convViewOffsetY + (v2.y - convMinY) * convViewScale));
+                    } else {
+                        for (let i = 0; i < ent.vertices.length; i++) {
+                            let v = ent.vertices[i]; let cx = convViewOffsetX + (v.x - convMinX) * convViewScale; let cy = dxfCanvas.height - (convViewOffsetY + (v.y - convMinY) * convViewScale);
+                            if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+                        }
+                        if (ent.shape) ctx.lineTo(convViewOffsetX + (ent.vertices[0].x - convMinX) * convViewScale, dxfCanvas.height - (convViewOffsetY + (ent.vertices[0].y - convMinY) * convViewScale));
+                    }
+                    ctx.stroke();
+                }
+            });
+        }
+
+        dxfCanvas.addEventListener('wheel', (e) => {
+            e.preventDefault(); if (convMinX === Infinity) return;
+            const factor = e.deltaY < 0 ? 1.1 : 1/1.1; const rect = dxfCanvas.getBoundingClientRect(); const mouseX = e.clientX - rect.left, mouseY = e.clientY - rect.top;
+            const relX = (mouseX - convViewOffsetX) / convViewScale, relY = (dxfCanvas.height - mouseY - convViewOffsetY) / convViewScale;
+            convViewScale *= factor; convViewOffsetX = mouseX - relX * convViewScale; convViewOffsetY = dxfCanvas.height - mouseY - relY * convViewScale;
+            drawConverterPreview();
+        });
+        dxfCanvas.addEventListener('mousedown', (e) => { convDragging = true; convLastX = e.clientX; convLastY = e.clientY; });
+        window.addEventListener('mousemove', (e) => { if (!convDragging) return; convViewOffsetX += e.clientX - convLastX; convViewOffsetY -= e.clientY - convLastY; convLastX = e.clientX; convLastY = e.clientY; drawConverterPreview(); });
+        window.addEventListener('mouseup', () => convDragging = false);
+
+        let convInitialPinchDist = null;
+        dxfCanvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) { convDragging = true; convLastX = e.touches[0].clientX; convLastY = e.touches[0].clientY; } 
+            else if (e.touches.length === 2) { convDragging = false; const dx = e.touches[0].clientX - e.touches[1].clientX; const dy = e.touches[0].clientY - e.touches[1].clientY; convInitialPinchDist = Math.sqrt(dx * dx + dy * dy); }
+        }, { passive: false });
+        dxfCanvas.addEventListener('touchmove', (e) => {
+            if (convMinX === Infinity) return; e.preventDefault();
+            if (e.touches.length === 1 && convDragging) {
+                convViewOffsetX += e.touches[0].clientX - convLastX; convViewOffsetY -= e.touches[0].clientY - convLastY; convLastX = e.touches[0].clientX; convLastY = e.touches[0].clientY; drawConverterPreview();
+            } else if (e.touches.length === 2 && convInitialPinchDist) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX; const dy = e.touches[0].clientY - e.touches[1].clientY; const newDist = Math.sqrt(dx * dx + dy * dy); const factor = newDist / convInitialPinchDist;
+                const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2; const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                const rect = dxfCanvas.getBoundingClientRect(); const mouseX = midX - rect.left; const mouseY = midY - rect.top;
+                const relX = (mouseX - convViewOffsetX) / convViewScale; const relY = (dxfCanvas.height - mouseY - convViewOffsetY) / convViewScale;
+                convViewScale *= factor; convViewOffsetX = mouseX - relX * convViewScale; convViewOffsetY = dxfCanvas.height - mouseY - relY * convViewScale; convInitialPinchDist = newDist; drawConverterPreview();
+            }
+        }, { passive: false });
+        window.addEventListener('touchend', () => { convDragging = false; convInitialPinchDist = null; });
+
+        function getVertexZ(ent, vertex) {
+            if (ent.type === 'LWPOLYLINE') { return typeof ent.elevation === 'number' ? ent.elevation : 0; }
+            if (vertex && typeof vertex.z === 'number') { return vertex.z; }
+            if (typeof ent.elevation === 'number') { return ent.elevation; }
+            return 0;
+        }
+
+        function generateKML(dxfData) {
+            let kmlString = `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n  <Document>\n    <name>Export Local to Global</name>\n`;
+            const isAddAnno = document.getElementById('toggle-annotation').checked; let annotatedPoints = new Set();
+            if (dxfData && dxfData.entities) {
+                const rawLayers = dxfData.tables?.layer?.layers || {}; const layers = {}; for (const key in rawLayers) layers[key.toUpperCase()] = rawLayers[key];
+                function getKmlColor(entity) {
+                    if (entity.trueColor !== undefined) { const r = (entity.trueColor >> 16) & 0xFF; const g = (entity.trueColor >> 8) & 0xFF; const b = entity.trueColor & 0xFF; return `ff${b.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${r.toString(16).padStart(2, '0')}`; }
+                    let aci = entity.colorNumber !== undefined ? entity.colorNumber : entity.colorIndex;
+                    if (aci === 256 || aci === undefined) { const layerName = (entity.layer || '').toUpperCase(); if (layerName && layers[layerName]) { const layer = layers[layerName]; if (layer.trueColor !== undefined) { const r = (layer.trueColor >> 16) & 0xFF; const g = (layer.trueColor >> 8) & 0xFF; const b = layer.trueColor & 0xFF; return `ff${b.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${r.toString(16).padStart(2, '0')}`; } aci = layer.colorNumber !== undefined ? layer.colorNumber : layer.colorIndex; } }
+                    if (aci === 0) aci = 7; let hexColor = (aci >= 1 && aci <= 255) ? aciPalette[aci] : "FFFFFF"; return `ff${hexColor.substring(4, 6)}${hexColor.substring(2, 4)}${hexColor.substring(0, 2)}`.toLowerCase();
+                }
+                dxfData.entities.forEach((entity) => {
+                    let coordinatesArray = [];
+                    if (entity.type === 'LINE') { coordinatesArray.push([entity.vertices[0].x, entity.vertices[0].y, getVertexZ(entity, entity.vertices[0])]); coordinatesArray.push([entity.vertices[1].x, entity.vertices[1].y, getVertexZ(entity, entity.vertices[1])]); } 
+                    else if (entity.type === 'LWPOLYLINE' || entity.type === 'POLYLINE') { entity.vertices.forEach(v => { coordinatesArray.push([v.x, v.y, getVertexZ(entity, v)]); }); if (entity.shape) { coordinatesArray.push([entity.vertices[0].x, entity.vertices[0].y, getVertexZ(entity, entity.vertices[0])]); } }
+                    if (coordinatesArray.length > 0) {
+                        let kmlCoords = coordinatesArray.map(pt => {
+                            const globalUtm = window.transformLocalToGlobal(pt[0], pt[1]); const latLng = convertUtmToLatLng(globalUtm.easting, globalUtm.northing);
+                            if (isAddAnno) {
+                                let pKey = `${latLng[0].toFixed(5)}_${latLng[1].toFixed(5)}`;
+                                if (!annotatedPoints.has(pKey)) {
+                                    annotatedPoints.add(pKey); let zVal = pt[2];
+                                    kmlString += `    <Placemark><name>${zVal.toFixed(2)}</name><Style><IconStyle><scale>0</scale></IconStyle><LabelStyle><color>ffffffff</color><scale>0.8</scale></LabelStyle></Style><Point><coordinates>${latLng[0]},${latLng[1]},${zVal}</coordinates></Point></Placemark>\n`;
+                                }
+                            }
+                            return `${latLng[0]},${latLng[1]},${pt[2]}`;
+                        }).join(' ');
+                        const kmlColor = getKmlColor(entity);
+                        kmlString += `    <Placemark><Style><LineStyle><color>${kmlColor}</color><width>2</width></LineStyle></Style><LineString><tessellate>1</tessellate><coordinates>${kmlCoords}</coordinates></LineString></Placemark>\n`;
+                    }
+                });
+            }
+            kmlString += `  </Document>\n</kml>`; return kmlString;
+        }
+
+        function generateDXF(dxfData) {
+            let out = "0\nSECTION\n2\nENTITIES\n"; const isAddAnno = document.getElementById('toggle-annotation').checked; let annotatedPoints = new Set();
+            if (dxfData && dxfData.entities) {
+                dxfData.entities.forEach((entity) => {
+                    let layer = entity.layer || "0"; let color = entity.colorNumber !== undefined ? entity.colorNumber : (entity.colorIndex !== undefined ? entity.colorIndex : 256);
+                    let vertices = [];
+                    if (entity.type === 'LINE') {
+                        let p1 = window.transformLocalToGlobal(entity.vertices[0].x, entity.vertices[0].y); let p2 = window.transformLocalToGlobal(entity.vertices[1].x, entity.vertices[1].y);
+                        let z1 = getVertexZ(entity, entity.vertices[0]); let z2 = getVertexZ(entity, entity.vertices[1]);
+                        out += `0\nLINE\n8\n${layer}\n62\n${color}\n10\n${p1.easting.toFixed(4)}\n20\n${p1.northing.toFixed(4)}\n30\n${z1.toFixed(4)}\n11\n${p2.easting.toFixed(4)}\n21\n${p2.northing.toFixed(4)}\n31\n${z2.toFixed(4)}\n`;
+                        vertices = [ {x: p1.easting, y: p1.northing, z: z1}, {x: p2.easting, y: p2.northing, z: z2} ];
+                    } else if (entity.type === 'LWPOLYLINE') {
+                        out += `0\nLWPOLYLINE\n8\n${layer}\n62\n${color}\n100\nAcDbEntity\n100\nAcDbPolyline\n90\n${entity.vertices.length}\n70\n${entity.shape ? 1 : 0}\n`; 
+                        let elev = entity.elevation || 0; out += `38\n${elev.toFixed(4)}\n`; 
+                        entity.vertices.forEach(v => { let p = window.transformLocalToGlobal(v.x, v.y); out += `10\n${p.easting.toFixed(4)}\n20\n${p.northing.toFixed(4)}\n`; vertices.push({x: p.easting, y: p.northing, z: elev}); });
+                    } else if (entity.type === 'POLYLINE') {
+                        let closedBit = entity.shape ? 1 : 0; out += `0\nPOLYLINE\n8\n${layer}\n62\n${color}\n66\n1\n70\n${8 | closedBit}\n10\n0.0\n20\n0.0\n30\n0.0\n`; 
+                        entity.vertices.forEach(v => { let p = window.transformLocalToGlobal(v.x, v.y); let z = getVertexZ(entity, v); out += `0\nVERTEX\n8\n${layer}\n70\n32\n10\n${p.easting.toFixed(4)}\n20\n${p.northing.toFixed(4)}\n30\n${z.toFixed(4)}\n`; vertices.push({x: p.easting, y: p.northing, z: z}); });
+                        out += `0\nSEQEND\n8\n${layer}\n`; 
+                    }
+                    if (isAddAnno && vertices.length > 0) {
+                        vertices.forEach(v => {
+                            let pKey = `${v.x.toFixed(2)}_${v.y.toFixed(2)}`;
+                            if (!annotatedPoints.has(pKey)) { annotatedPoints.add(pKey); out += `0\nTEXT\n8\nZ_ELEVATION_ANNO\n62\n7\n10\n${v.x.toFixed(4)}\n20\n${v.y.toFixed(4)}\n30\n${v.z.toFixed(4)}\n40\n2.0\n1\n${v.z.toFixed(2)}\n`; }
+                        });
+                    }
+                });
+            }
+            out += "0\nENDSEC\n0\nEOF\n"; return out;
+        }
+
+        document.getElementById('convert-btn').addEventListener('click', async () => {
+            if (!parsedDxfData) return;
+            
+            // CHECK IF CONFIG IS UPLOADED (NO POPUPS)
+            if (typeof window.transformLocalToGlobal !== 'function') {
+                const warn = document.getElementById('converter-config-warning');
+                warn.classList.remove('hidden');
+                warn.classList.remove('jiggle');
+                void warn.offsetWidth; // Trigger DOM reflow to restart animation
+                warn.classList.add('jiggle', 'highlight-red');
+                return;
+            }
+
+            const format = document.getElementById('export-format').value; const baseName = currentFileName ? currentFileName.replace(/\.[^/.]+$/, "") : "local_converted";
+            showToast(`Preparing ${format.toUpperCase()}...`, 'info');
+            try {
+                if (format === 'kmz' || format === 'kml') {
+                    const kmlContent = generateKML(parsedDxfData);
+                    if (format === 'kmz') {
+                        const zip = new JSZip(); zip.file("doc.kml", kmlContent); const content = await zip.generateAsync({ type: "blob" }); saveAs(content, `${baseName}.kmz`); showToast('Successfully downloaded KMZ!', 'success');
+                    } else {
+                        const blob = new Blob([kmlContent], { type: "application/vnd.google-earth.kml+xml" }); saveAs(blob, `${baseName}.kml`); showToast('Successfully downloaded KML!', 'success');
+                    }
+                } else if (format === 'dxf') {
+                    const newDxfContent = generateDXF(parsedDxfData); const blob = new Blob([newDxfContent], { type: "image/vnd.dxf" }); saveAs(blob, `${baseName}_Global.dxf`); showToast('Successfully downloaded Global DXF!', 'success');
+                }
+            } catch (error) { console.error(error); showToast('An error occurred while processing data.', 'error'); }
+        });
+
+        // --- DESIGN VIEWER LOGIC ---
+        const viewerCanvas = document.getElementById('viewer-canvas'); const vCtx = viewerCanvas.getContext('2d');
+        const viewerFileInput = document.getElementById('viewer-file-input'); const coordPromptModal = document.getElementById('coord-prompt-modal'); const viewerFileListEl = document.getElementById('viewer-file-list');
+        const entityInfoCard = document.getElementById('entity-info-card'); const btnCloseInfo = document.getElementById('close-entity-info'); const eiType = document.getElementById('ei-type'); const eiLength = document.getElementById('ei-length'); const eiElevationContainer = document.getElementById('ei-elevation-container'); const eiElevation = document.getElementById('ei-elevation'); const eiVertexContainer = document.getElementById('ei-vertex-container'); const eiVIdx = document.getElementById('ei-v-idx'); const eiVTotal = document.getElementById('ei-v-total'); const eiVZ = document.getElementById('ei-v-z'); const eiBtnPrev = document.getElementById('ei-btn-prev'); const eiBtnNext = document.getElementById('ei-btn-next');
+        
+        let viewerLoadedDxfs = []; let pendingViewerFile = null; let fileIdCounter = 0;
+        let viewerScale = 1, viewerOffsetX = 0, viewerOffsetY = 0, viewerDragging = false, viewerLastX = 0, viewerLastY = 0, viewerClickDist = 0;
+        let viewerRotation = 0, viewerRotationLocked = true, viewerInitialAngle = null;
+        let selectedEntity = null, selectedVertexIndex = 0;
+        let gpsWatchId = null, currentGpsUtm = null, isFirstGpsLock = false;
+
+        const btnNorth = document.getElementById('viewer-north-btn'); const lockIcon = document.getElementById('compass-lock'); const compassArrow = document.getElementById('compass-arrow');
+        btnNorth.addEventListener('click', () => {
+            if (viewerRotationLocked) { viewerRotationLocked = false; lockIcon.classList.add('hidden'); showToast('Rotation Unlocked. Twist with 2 fingers to rotate.', 'info'); } 
+            else { viewerRotationLocked = true; viewerRotation = 0; lockIcon.classList.remove('hidden'); compassArrow.style.transform = `rotate(0rad)`; drawViewerCanvas(); showToast('Rotation Locked to North', 'success'); }
+        });
+
+        document.getElementById('viewer-add-btn').addEventListener('click', () => viewerFileInput.click());
+        viewerFileInput.addEventListener('change', async (e) => {
+            if (e.target.files.length) { pendingViewerFile = e.target.files[0]; coordPromptModal.classList.remove('hidden'); }
+            viewerFileInput.value = ''; 
+        });
+
+        document.getElementById('prompt-btn-cancel').addEventListener('click', () => { coordPromptModal.classList.add('hidden'); pendingViewerFile = null; });
+        
+        document.getElementById('prompt-btn-local').addEventListener('click', async () => {
+            // CHECK IF CONFIG IS UPLOADED (NO POPUPS)
+            if (typeof window.transformLocalToGlobal !== 'function') {
+                const warn = document.getElementById('viewer-config-warning');
+                warn.classList.remove('hidden');
+                warn.classList.remove('jiggle');
+                void warn.offsetWidth; // Trigger DOM reflow to restart animation
+                warn.classList.add('jiggle', 'highlight-red');
+                return;
+            }
+            coordPromptModal.classList.add('hidden'); if (!pendingViewerFile) return; const ext = pendingViewerFile.name.split('.').pop().toLowerCase();
+            if (ext === 'tif' || ext === 'tiff') { await handleTiffFile(pendingViewerFile, true); } else { loadViewerFile(pendingViewerFile, true); } pendingViewerFile = null;
+        });
+        
+        document.getElementById('prompt-btn-global').addEventListener('click', async () => {
+            coordPromptModal.classList.add('hidden'); if (!pendingViewerFile) return; const ext = pendingViewerFile.name.split('.').pop().toLowerCase();
+            if (ext === 'tif' || ext === 'tiff') { await handleTiffFile(pendingViewerFile, false); } else { loadViewerFile(pendingViewerFile, false); } pendingViewerFile = null;
+        });
+
+        function loadViewerFile(file, isLocal) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = new window.DxfParser().parseSync(e.target.result);
+                    const rawLayers = parsed.tables?.layer?.layers || {}; let processedEntities = [];
+                    parsed.entities.forEach(ent => {
+                        const color = extractCanvasHexColor(ent, rawLayers); const uniqueId = Math.random().toString(36).substring(2, 10);
+                        if (ent.type === 'LINE') {
+                            let p1 = ent.vertices[0], p2 = ent.vertices[1]; let z1 = getVertexZ(ent, p1); let z2 = getVertexZ(ent, p2);
+                            if (isLocal) { let g1 = window.transformLocalToGlobal(p1.x, p1.y); p1 = {easting: g1.easting, northing: g1.northing, z: z1}; let g2 = window.transformLocalToGlobal(p2.x, p2.y); p2 = {easting: g2.easting, northing: g2.northing, z: z2}; }
+                            else { p1 = {easting: p1.x, northing: p1.y, z: z1}; p2 = {easting: p2.x, northing: p2.y, z: z2}; }
+                            processedEntities.push({ type: 'Line', p1, p2, color, id: uniqueId });
+                        } else if (ent.type === 'LWPOLYLINE' || ent.type === 'POLYLINE') {
+                            let isTruly3D = false;
+                            let pts = ent.vertices.map(v => { let z = getVertexZ(ent, v); if (isLocal) { let g = window.transformLocalToGlobal(v.x, v.y); return {easting: g.easting, northing: g.northing, z: z}; } return {easting: v.x, northing: v.y, z: z}; });
+                            if (pts.length > 0) { let firstZ = pts[0].z; for(let i=1; i<pts.length; i++){ if (Math.abs(pts[i].z - firstZ) > 0.0001) { isTruly3D = true; break; } } }
+                            let displayType = isTruly3D ? '3D Polyline' : (ent.type === 'POLYLINE' ? 'Polyline' : 'LWPolyline');
+                            processedEntities.push({ type: displayType, pts, shape: ent.shape, color, id: uniqueId });
+                        }
+                    });
+                    viewerLoadedDxfs.push({ id: fileIdCounter++, name: file.name, entities: processedEntities }); updateViewerFileListUI(); zoomExtentsViewer(); showToast(`${file.name} loaded`, 'success');
+                } catch(err) { showToast('Parse failed', 'error'); }
+            };
+            reader.readAsText(file);
+        }
+
+        async function handleTiffFile(file, isLocal) {
+            if (file.size > 50 * 1024 * 1024) { showToast('TIFF file exceeds 50MB memory limit.', 'error'); return; }
+            showToast('Processing TIFF Offline...', 'info');
+            try {
+                const arrayBuffer = await file.arrayBuffer(); const tiff = await GeoTIFF.fromArrayBuffer(arrayBuffer); const image = await tiff.getImage();
+                let bbox = image.getBoundingBox();
+                if (!bbox) { showToast('No georeferencing found. Rendering at 0,0.', 'warning'); bbox = [0, 0, image.getWidth(), image.getHeight()]; }
+                if (isLocal) { let pMin = window.transformLocalToGlobal(bbox[0], bbox[1]); let pMax = window.transformLocalToGlobal(bbox[2], bbox[3]); bbox = [pMin.easting, pMin.northing, pMax.easting, pMax.northing]; }
+                const width = image.getWidth(); const height = image.getHeight(); const MAX_DIM = 4096; let outW = width; let outH = height; let readOptions = { interleave: true };
+                if (width > MAX_DIM || height > MAX_DIM) { const scale = Math.min(MAX_DIM / width, MAX_DIM / height); outW = Math.floor(width * scale); outH = Math.floor(height * scale); readOptions.width = outW; readOptions.height = outH; showToast('Downsampling large TIFF to preserve memory...', 'info'); }
+                const rasters = await image.readRasters(readOptions); const samplesPerPixel = rasters.length / (outW * outH);
+                const offScreen = document.createElement('canvas'); offScreen.width = outW; offScreen.height = outH; const ctx = offScreen.getContext('2d'); const imgData = ctx.createImageData(outW, outH); const data = imgData.data;
+                for (let i = 0; i < outW * outH; i++) {
+                    if (samplesPerPixel >= 3) { data[i * 4] = rasters[i * samplesPerPixel]; data[i * 4 + 1] = rasters[i * samplesPerPixel + 1]; data[i * 4 + 2] = rasters[i * samplesPerPixel + 2]; data[i * 4 + 3] = samplesPerPixel === 4 ? rasters[i * samplesPerPixel + 3] : 255; } 
+                    else { const val = rasters[i * samplesPerPixel]; data[i * 4] = val; data[i * 4 + 1] = val; data[i * 4 + 2] = val; data[i * 4 + 3] = 255; }
+                }
+                ctx.putImageData(imgData, 0, 0); viewerLoadedDxfs.push({ id: fileIdCounter++, name: file.name, isTiff: true, canvas: offScreen, bbox: bbox }); updateViewerFileListUI(); zoomExtentsViewer(); showToast('TIFF Rendered Successfully', 'success');
+            } catch (err) { console.error(err); showToast('Failed to process TIFF. Ensure it is a valid format.', 'error'); }
+        }
+
+        function updateViewerFileListUI() {
+            viewerFileListEl.innerHTML = '';
+            viewerLoadedDxfs.forEach(item => {
+                const el = document.createElement('div'); el.className = 'bg-gray-800 bg-opacity-90 border border-gray-700 rounded px-3 py-2 flex items-center justify-between text-xs text-white shadow pointer-events-auto';
+                el.innerHTML = `<span class="truncate w-40 font-medium">${item.name}</span><button onclick="removeViewerFile(${item.id})" class="text-gray-400 hover:text-m3-error dark:hover:text-m3-errorDark ml-2 font-bold">&times;</button>`;
+                viewerFileListEl.appendChild(el);
+            });
+        }
+
+        window.removeViewerFile = function(id) {
+            viewerLoadedDxfs = viewerLoadedDxfs.filter(f => f.id !== id);
+            let isSelectedRemoved = true; viewerLoadedDxfs.filter(f => !f.isTiff).forEach(f => { if(f.entities.some(e => selectedEntity && e.id === selectedEntity.id)) isSelectedRemoved = false; });
+            if (isSelectedRemoved) closeEntityInfo();
+            updateViewerFileListUI(); if(viewerLoadedDxfs.length > 0) zoomExtentsViewer(); else drawViewerCanvas();
+        }
+
+        function zoomExtentsViewer() {
+            if (!viewerCanvas.parentElement) return;
+            viewerCanvas.width = viewerCanvas.parentElement.clientWidth; viewerCanvas.height = viewerCanvas.parentElement.clientHeight;
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            viewerLoadedDxfs.forEach(file => {
+                if (file.isTiff) { if (file.bbox[0] < minX) minX = file.bbox[0]; if (file.bbox[2] > maxX) maxX = file.bbox[2]; if (file.bbox[1] < minY) minY = file.bbox[1]; if (file.bbox[3] > maxY) maxY = file.bbox[3]; } 
+                else { file.entities.forEach(ent => { if (ent.type === 'Line') { [ent.p1, ent.p2].forEach(p => { if (p.easting < minX) minX = p.easting; if (p.easting > maxX) maxX = p.easting; if (p.northing < minY) minY = p.northing; if (p.northing > maxY) maxY = p.northing; }); } else { ent.pts.forEach(p => { if (p.easting < minX) minX = p.easting; if (p.easting > maxX) maxX = p.easting; if (p.northing < minY) minY = p.northing; if (p.northing > maxY) maxY = p.northing; }); } }); }
+            });
+            if (currentGpsUtm) { if (currentGpsUtm.easting < minX) minX = currentGpsUtm.easting; if (currentGpsUtm.easting > maxX) maxX = currentGpsUtm.easting; if (currentGpsUtm.northing < minY) minY = currentGpsUtm.northing; if (currentGpsUtm.northing > maxY) maxY = currentGpsUtm.northing; }
+            if (minX === Infinity) return;
+            if (minX === maxX && minY === maxY) { viewerScale = 1; viewerOffsetX = viewerCanvas.width/2 - minX; viewerOffsetY = viewerCanvas.height/2 - minY; drawViewerCanvas(); return; }
+            const width = maxX - minX, height = maxY - minY, padding = 40;
+            viewerScale = Math.min((viewerCanvas.width - padding*2) / width, (viewerCanvas.height - padding*2) / height);
+            viewerOffsetX = (viewerCanvas.width - width * viewerScale) / 2 - (minX * viewerScale); viewerOffsetY = (viewerCanvas.height - height * viewerScale) / 2 - (minY * viewerScale); drawViewerCanvas();
+        }
+
+        document.getElementById('viewer-zoom-btn').addEventListener('click', zoomExtentsViewer);
+
+        function drawViewerCanvas() {
+            viewerCanvas.width = viewerCanvas.parentElement.clientWidth; viewerCanvas.height = viewerCanvas.parentElement.clientHeight;
+            vCtx.clearRect(0, 0, viewerCanvas.width, viewerCanvas.height);
+            vCtx.save(); vCtx.translate(viewerCanvas.width/2, viewerCanvas.height/2); vCtx.rotate(viewerRotation); vCtx.translate(-viewerCanvas.width/2, -viewerCanvas.height/2);
+            
+            viewerLoadedDxfs.filter(f => f.isTiff).forEach(file => {
+                const cx = file.bbox[0] * viewerScale + viewerOffsetX; const cy = viewerCanvas.height - (file.bbox[3] * viewerScale + viewerOffsetY);
+                const cw = (file.bbox[2] - file.bbox[0]) * viewerScale; const ch = (file.bbox[3] - file.bbox[1]) * viewerScale; vCtx.drawImage(file.canvas, cx, cy, cw, ch);
+            });
+            
+            viewerLoadedDxfs.filter(f => !f.isTiff).forEach(file => {
+                file.entities.forEach(ent => {
+                    const isSelected = selectedEntity && selectedEntity.id === ent.id; vCtx.strokeStyle = isSelected ? '#00FFFF' : ent.color; vCtx.lineWidth = isSelected ? 3 : 1; vCtx.beginPath();
+                    if (ent.type === 'Line') { vCtx.moveTo(ent.p1.easting * viewerScale + viewerOffsetX, viewerCanvas.height - (ent.p1.northing * viewerScale + viewerOffsetY)); vCtx.lineTo(ent.p2.easting * viewerScale + viewerOffsetX, viewerCanvas.height - (ent.p2.northing * viewerScale + viewerOffsetY)); } 
+                    else { ent.pts.forEach((p, i) => { let cx = p.easting * viewerScale + viewerOffsetX; let cy = viewerCanvas.height - (p.northing * viewerScale + viewerOffsetY); if (i === 0) vCtx.moveTo(cx, cy); else vCtx.lineTo(cx, cy); }); if (ent.shape) { vCtx.lineTo(ent.pts[0].easting * viewerScale + viewerOffsetX, viewerCanvas.height - (ent.pts[0].northing * viewerScale + viewerOffsetY)); } }
+                    vCtx.stroke();
+                });
+            });
+
+            if (selectedEntity && selectedEntity.type === '3D Polyline') {
+                const pts = selectedEntity.pts; if (pts && pts[selectedVertexIndex]) { const p = pts[selectedVertexIndex]; const cx = p.easting * viewerScale + viewerOffsetX; const cy = viewerCanvas.height - (p.northing * viewerScale + viewerOffsetY); vCtx.beginPath(); vCtx.arc(cx, cy, 6, 0, 2 * Math.PI); vCtx.fillStyle = '#FFD600'; vCtx.fill(); vCtx.lineWidth = 2; vCtx.strokeStyle = '#FFFFFF'; vCtx.stroke(); }
+            }
+
+            if (currentGpsUtm) {
+                const cx = currentGpsUtm.easting * viewerScale + viewerOffsetX; const cy = viewerCanvas.height - (currentGpsUtm.northing * viewerScale + viewerOffsetY);
+                vCtx.save(); vCtx.translate(cx, cy);
+                vCtx.beginPath(); vCtx.arc(0, 0, 16, 0, 2 * Math.PI, false); vCtx.fillStyle = 'rgba(59, 130, 246, 0.25)'; vCtx.fill(); vCtx.lineWidth = 1; vCtx.strokeStyle = 'rgba(59, 130, 246, 0.5)'; vCtx.stroke();
+                vCtx.beginPath(); vCtx.arc(0, 0, 7, 0, 2 * Math.PI); vCtx.fillStyle = '#FFFFFF'; vCtx.shadowColor = 'rgba(0,0,0,0.3)'; vCtx.shadowBlur = 4; vCtx.shadowOffsetY = 2; vCtx.fill();
+                vCtx.shadowColor = 'transparent'; vCtx.beginPath(); vCtx.arc(0, 0, 5, 0, 2 * Math.PI); vCtx.fillStyle = '#3B82F6'; vCtx.fill();
+                vCtx.beginPath(); vCtx.moveTo(-16, 0); vCtx.lineTo(-9, 0); vCtx.moveTo(16, 0); vCtx.lineTo(9, 0); vCtx.moveTo(0, -16); vCtx.lineTo(0, -9); vCtx.moveTo(0, 16); vCtx.lineTo(0, 9); vCtx.lineWidth = 2; vCtx.strokeStyle = '#1D4ED8'; vCtx.stroke();
+                vCtx.restore();
+            }
+            vCtx.restore(); if (compassArrow) compassArrow.style.transform = `rotate(${viewerRotation}rad)`;
+        }
+
+        function dist2(v, w) { return Math.pow(v.x - w.x, 2) + Math.pow(v.y - w.y, 2); }
+        function distToSegmentSquared(p, v, w) { let l2 = dist2(v, w); if (l2 === 0) return dist2(p, v); let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2; t = Math.max(0, Math.min(1, t)); return dist2(p, { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) }); }
+        function calculateLength(ent) { let len = 0; if (ent.type === 'Line') { len = Math.sqrt(Math.pow(ent.p2.easting - ent.p1.easting, 2) + Math.pow(ent.p2.northing - ent.p1.northing, 2)); } else { for(let i=0; i<ent.pts.length-1; i++) { len += Math.sqrt(Math.pow(ent.pts[i+1].easting - ent.pts[i].easting, 2) + Math.pow(ent.pts[i+1].northing - ent.pts[i].northing, 2)); } if (ent.shape) { len += Math.sqrt(Math.pow(ent.pts[0].easting - ent.pts[ent.pts.length-1].easting, 2) + Math.pow(ent.pts[0].northing - ent.pts[ent.pts.length-1].northing, 2)); } } return len.toFixed(2); }
+
+        function handleViewerClick(e) {
+            const rect = viewerCanvas.getBoundingClientRect(); const rawMouseX = e.clientX - rect.left; const rawMouseY = e.clientY - rect.top;
+            const cx = viewerCanvas.width/2; const cy = viewerCanvas.height/2; const dx_m = rawMouseX - cx; const dy_m = rawMouseY - cy;
+            const mouseX = dx_m * Math.cos(-viewerRotation) - dy_m * Math.sin(-viewerRotation) + cx; const mouseY = dx_m * Math.sin(-viewerRotation) + dy_m * Math.cos(-viewerRotation) + cy;
+            const worldX = (mouseX - viewerOffsetX) / viewerScale; const worldY = (viewerCanvas.height - mouseY - viewerOffsetY) / viewerScale; const clickP = { x: worldX, y: worldY };
+            let closestEnt = null; let minDistSq = Infinity; const thresholdSq = Math.pow(10 / viewerScale, 2);
+            viewerLoadedDxfs.filter(f => !f.isTiff).forEach(file => {
+                file.entities.forEach(ent => {
+                    let d = Infinity;
+                    if (ent.type === 'Line') { d = distToSegmentSquared(clickP, {x: ent.p1.easting, y: ent.p1.northing}, {x: ent.p2.easting, y: ent.p2.northing}); } 
+                    else { for(let i=0; i<ent.pts.length-1; i++) { let segD = distToSegmentSquared(clickP, {x: ent.pts[i].easting, y: ent.pts[i].northing}, {x: ent.pts[i+1].easting, y: ent.pts[i+1].northing}); if (segD < d) d = segD; } if (ent.shape) { let segD = distToSegmentSquared(clickP, {x: ent.pts[ent.pts.length-1].easting, y: ent.pts[ent.pts.length-1].northing}, {x: ent.pts[0].easting, y: ent.pts[0].northing}); if (segD < d) d = segD; } }
+                    if (d < thresholdSq && d < minDistSq) { minDistSq = d; closestEnt = ent; }
+                });
+            });
+            if (closestEnt) { selectedEntity = closestEnt; selectedVertexIndex = 0; showEntityInfo(); } else { closeEntityInfo(); } drawViewerCanvas();
+        }
+
+        function showEntityInfo() {
+            if(!selectedEntity) return; eiType.textContent = selectedEntity.type; eiLength.textContent = calculateLength(selectedEntity);
+            if (selectedEntity.type === '3D Polyline') { eiVertexContainer.classList.remove('hidden'); eiElevationContainer.classList.add('hidden'); updateVertexUI(); } 
+            else { eiVertexContainer.classList.add('hidden'); eiElevationContainer.classList.remove('hidden'); let elev = 0; if (selectedEntity.type === 'Line') elev = selectedEntity.p1.z; else if (selectedEntity.pts && selectedEntity.pts.length > 0) elev = selectedEntity.pts[0].z; eiElevation.textContent = (elev || 0).toFixed(3); }
+            entityInfoCard.classList.remove('hidden');
+        }
+
+        function updateVertexUI() { if(!selectedEntity) return; const pts = selectedEntity.pts; eiVIdx.textContent = selectedVertexIndex + 1; eiVTotal.textContent = pts.length; eiVZ.textContent = `Z: ${pts[selectedVertexIndex].z.toFixed(3)}`; }
+        function closeEntityInfo() { selectedEntity = null; entityInfoCard.classList.add('hidden'); drawViewerCanvas(); }
+        btnCloseInfo.addEventListener('click', closeEntityInfo);
+        eiBtnPrev.addEventListener('click', () => { if(!selectedEntity || selectedEntity.type !== '3D Polyline') return; const pts = selectedEntity.pts; selectedVertexIndex = (selectedVertexIndex - 1 + pts.length) % pts.length; updateVertexUI(); drawViewerCanvas(); });
+        eiBtnNext.addEventListener('click', () => { if(!selectedEntity || selectedEntity.type !== '3D Polyline') return; const pts = selectedEntity.pts; selectedVertexIndex = (selectedVertexIndex + 1) % pts.length; updateVertexUI(); drawViewerCanvas(); });
+
+        viewerCanvas.addEventListener('wheel', (e) => {
+            e.preventDefault(); const factor = e.deltaY < 0 ? 1.1 : 1/1.1; const rect = viewerCanvas.getBoundingClientRect(); const rawMouseX = e.clientX - rect.left, rawMouseY = e.clientY - rect.top;
+            const cx = viewerCanvas.width/2; const cy = viewerCanvas.height/2; const dx_m = rawMouseX - cx; const dy_m = rawMouseY - cy;
+            const mouseX = dx_m * Math.cos(-viewerRotation) - dy_m * Math.sin(-viewerRotation) + cx; const mouseY = dx_m * Math.sin(-viewerRotation) + dy_m * Math.cos(-viewerRotation) + cy;
+            const worldX = (mouseX - viewerOffsetX) / viewerScale; const worldY = (viewerCanvas.height - mouseY - viewerOffsetY) / viewerScale;
+            viewerScale *= factor; viewerOffsetX = mouseX - worldX * viewerScale; viewerOffsetY = viewerCanvas.height - mouseY - worldY * viewerScale; drawViewerCanvas();
+        });
+
+        viewerCanvas.addEventListener('mousedown', (e) => { viewerDragging = true; viewerClickDist = 0; viewerLastX = e.clientX; viewerLastY = e.clientY; });
+        window.addEventListener('mousemove', (e) => {
+            if (!viewerDragging) return; const dx = e.clientX - viewerLastX; const dy = e.clientY - viewerLastY; viewerClickDist += Math.abs(dx) + Math.abs(dy);
+            const unrotatedDx = dx * Math.cos(-viewerRotation) - dy * Math.sin(-viewerRotation); const unrotatedDy = dx * Math.sin(-viewerRotation) + dy * Math.cos(-viewerRotation);
+            viewerOffsetX += unrotatedDx; viewerOffsetY -= unrotatedDy; viewerLastX = e.clientX; viewerLastY = e.clientY; drawViewerCanvas();
+        });
+        window.addEventListener('mouseup', (e) => { if (viewerDragging && viewerClickDist < 5) { handleViewerClick(e); } viewerDragging = false; });
+
+        let viewerInitialPinchDist = null;
+        viewerCanvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) { viewerDragging = true; viewerClickDist = 0; viewerLastX = e.touches[0].clientX; viewerLastY = e.touches[0].clientY; } 
+            else if (e.touches.length === 2) { viewerDragging = false; const dx = e.touches[0].clientX - e.touches[1].clientX; const dy = e.touches[0].clientY - e.touches[1].clientY; viewerInitialPinchDist = Math.sqrt(dx * dx + dy * dy); viewerInitialAngle = Math.atan2(e.touches[1].clientY - e.touches[0].clientY, e.touches[1].clientX - e.touches[0].clientX); }
+        }, { passive: false });
+
+        viewerCanvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1 && viewerDragging) {
+                const dx = e.touches[0].clientX - viewerLastX; const dy = e.touches[0].clientY - viewerLastY; viewerClickDist += Math.abs(dx) + Math.abs(dy);
+                const unrotatedDx = dx * Math.cos(-viewerRotation) - dy * Math.sin(-viewerRotation); const unrotatedDy = dx * Math.sin(-viewerRotation) + dy * Math.cos(-viewerRotation);
+                viewerOffsetX += unrotatedDx; viewerOffsetY -= unrotatedDy; viewerLastX = e.touches[0].clientX; viewerLastY = e.touches[0].clientY; drawViewerCanvas();
+            } else if (e.touches.length === 2 && viewerInitialPinchDist) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX; const dy = e.touches[0].clientY - e.touches[1].clientY; const newDist = Math.sqrt(dx * dx + dy * dy); const factor = newDist / viewerInitialPinchDist;
+                const currentAngle = Math.atan2(e.touches[1].clientY - e.touches[0].clientY, e.touches[1].clientX - e.touches[0].clientX);
+                if (!viewerRotationLocked && viewerInitialAngle !== null) { viewerRotation += currentAngle - viewerInitialAngle; } viewerInitialAngle = currentAngle;
+                const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2; const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                const rect = viewerCanvas.getBoundingClientRect(); const rawMouseX = midX - rect.left; const rawMouseY = midY - rect.top;
+                const cx = viewerCanvas.width/2; const cy = viewerCanvas.height/2; const dx_m = rawMouseX - cx; const dy_m = rawMouseY - cy;
+                const mouseX = dx_m * Math.cos(-viewerRotation) - dy_m * Math.sin(-viewerRotation) + cx; const mouseY = dx_m * Math.sin(-viewerRotation) + dy_m * Math.cos(-viewerRotation) + cy;
+                const worldX = (mouseX - viewerOffsetX) / viewerScale; const worldY = (viewerCanvas.height - mouseY - viewerOffsetY) / viewerScale;
+                viewerScale *= factor; viewerOffsetX = mouseX - worldX * viewerScale; viewerOffsetY = viewerCanvas.height - mouseY - worldY * viewerScale; viewerInitialPinchDist = newDist; drawViewerCanvas();
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', (e) => { if (viewerDragging && viewerClickDist < 10 && e.changedTouches.length === 1) { const fakeEvent = { clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY }; handleViewerClick(fakeEvent); } viewerDragging = false; viewerInitialPinchDist = null; viewerInitialAngle = null; });
+
+        const viewerGpsBtn = document.getElementById('viewer-gps-btn');
+        viewerGpsBtn.addEventListener('click', () => {
+            if (gpsWatchId) {
+                if (currentGpsUtm) { viewerOffsetX = (viewerCanvas.width / 2) - (currentGpsUtm.easting * viewerScale); viewerOffsetY = (viewerCanvas.height / 2) - (currentGpsUtm.northing * viewerScale); drawViewerCanvas(); showToast('Centered on GPS location', 'success'); } 
+                else { showToast('Still acquiring GPS signal...', 'warning'); }
+            } else {
+                if (!("geolocation" in navigator)) { showToast('Geolocation not supported by browser.', 'error'); return; }
+                if (window.isSecureContext === false) { showToast('Warning: GPS requires a secure connection (HTTPS).', 'warning'); }
+                showToast('Requesting GPS permission and locking signal...', 'info'); viewerGpsBtn.classList.add('text-blue-400', 'border-blue-400'); isFirstGpsLock = true;
+                gpsWatchId = navigator.geolocation.watchPosition(
+                    (pos) => {
+                        if (isFirstGpsLock) { showToast('GPS Lock Acquired!', 'success'); }
+                        const lat = pos.coords.latitude; const lng = pos.coords.longitude; const utm = proj4("EPSG:4326", "EPSG:32650", [lng, lat]); currentGpsUtm = { easting: utm[0], northing: utm[1] };
+                        if (isFirstGpsLock) { zoomExtentsViewer(); isFirstGpsLock = false; } else { drawViewerCanvas(); }
+                    }, 
+                    (err) => {
+                        let errMsg = err.message; if (err.code === err.PERMISSION_DENIED) errMsg = "Location permission denied (or not HTTPS)."; if (err.code === err.TIMEOUT) errMsg = "Location request timed out."; if (err.code === err.POSITION_UNAVAILABLE) errMsg = "Location info unavailable.";
+                        showToast('GPS Notice: ' + errMsg, 'warning'); if (err.code === err.PERMISSION_DENIED) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; viewerGpsBtn.classList.remove('text-blue-400', 'border-blue-400'); }
+                    }, 
+                    { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
+                );
+            }
+        });
+
+        window.addEventListener('resize', () => { if (!document.getElementById('tab-content-viewer').classList.contains('hidden')) { drawViewerCanvas(); } if (!document.getElementById('dxf-modal').classList.contains('hidden')) { drawConverterPreview(); } });
+    </script>
+</body>
+</html>
