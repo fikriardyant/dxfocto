@@ -74,11 +74,6 @@
 </head>
 <body class="h-[100dvh] bg-m3-surface dark:bg-m3-surfaceDark text-gray-800 dark:text-gray-100 flex flex-col font-sans overflow-hidden">
 
-    <button id="theme-toggle" type="button" class="fixed top-4 right-4 z-50 p-2 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm transition-colors shadow-md border border-gray-200 dark:border-gray-700 focus:outline-none">
-        <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
-        <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
-    </button>
-
     <main class="flex-1 flex flex-col p-0 sm:p-4 md:p-6 w-full max-w-[1600px] mx-auto overflow-hidden">
         <div class="flex-1 w-full bg-white dark:bg-gray-900 sm:rounded-[28px] shadow-lg flex flex-col overflow-hidden border-0 sm:border border-gray-100 dark:border-gray-800 relative transition-colors duration-300">
             
@@ -90,10 +85,17 @@
                         <div class="mt-4 inline-block bg-white/10 px-4 py-1.5 rounded-full text-xs font-medium tracking-wide">Fikri A Freetime & AI</div>
                     </div>
                     
-                    <button id="top-config-btn" onclick="document.getElementById('config-file-input').click()" class="bg-white/10 hover:bg-white/20 p-2 sm:p-3 rounded-2xl transition-colors backdrop-blur-sm border border-white/10 text-white shadow-lg" title="Upload Config JS File">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    </button>
-                    <input type="file" id="config-file-input" accept=".js" class="hidden">
+                    <!-- Top Right Action Buttons (Theme + Config) -->
+                    <div class="flex items-center gap-2 sm:gap-3">
+                        <button id="theme-toggle" type="button" class="bg-white/10 hover:bg-white/20 p-2 sm:p-3 rounded-2xl transition-colors backdrop-blur-sm border border-white/10 text-white shadow-lg focus:outline-none" title="Toggle Theme">
+                            <svg id="theme-toggle-dark-icon" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                            <svg id="theme-toggle-light-icon" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                        </button>
+                        <button id="top-config-btn" onclick="document.getElementById('config-file-input').click()" class="bg-white/10 hover:bg-white/20 p-2 sm:p-3 rounded-2xl transition-colors backdrop-blur-sm border border-white/10 text-white shadow-lg" title="Upload Config JS File">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </button>
+                        <input type="file" id="config-file-input" accept=".js" class="hidden">
+                    </div>
                 </div>
                 <div class="absolute -bottom-32 -right-16 w-96 h-96 bg-pama-yellow opacity-40 dark:opacity-20 rounded-full blur-3xl pointer-events-none"></div>
             </div>
@@ -135,8 +137,17 @@
                         </div>
                         <div class="space-y-3 text-sm">
                             <div class="flex justify-between items-center"><span class="text-gray-500 dark:text-gray-400">Type:</span> <span id="ei-type" class="font-semibold text-gray-800 dark:text-white bg-m3-container dark:bg-m3-containerDark px-2 py-0.5 rounded text-xs uppercase tracking-wide"></span></div>
-                            <div class="flex justify-between items-center"><span class="text-gray-500 dark:text-gray-400">Length:</span> <span class="font-semibold text-gray-800 dark:text-white"><span id="ei-length"></span> m</span></div>
-                            <div id="ei-elevation-container" class="flex justify-between items-center hidden"><span class="text-gray-500 dark:text-gray-400">Elevation:</span> <span class="font-mono font-bold text-pama-yellowDark dark:text-pama-yellow bg-pama-yellow/10 px-2 py-0.5 rounded">Z: <span id="ei-elevation">0.00</span></span></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-500 dark:text-gray-400">Length:</span> <span class="font-semibold text-gray-800 dark:text-white"><span id="ei-length"></span> m</span></div>
+                        
+                        <div id="ei-area-container" class="flex justify-between items-start hidden border-t border-m3-outline/10 dark:border-m3-outlineDark/10 pt-2 mt-1">
+                            <span class="text-gray-500 dark:text-gray-400 mt-0.5">Area:</span> 
+                            <div class="text-right flex flex-col">
+                                <span class="font-semibold text-gray-800 dark:text-white"><span id="ei-area-m2"></span> m²</span>
+                                <span class="font-mono font-bold text-pama-yellowDark dark:text-pama-yellow text-[11px]"><span id="ei-area-ha"></span> ha</span>
+                            </div>
+                        </div>
+
+                        <div id="ei-elevation-container" class="flex justify-between items-center hidden"><span class="text-gray-500 dark:text-gray-400">Elevation:</span> <span class="font-mono font-bold text-pama-yellowDark dark:text-pama-yellow bg-pama-yellow/10 px-2 py-0.5 rounded">Z: <span id="ei-elevation">0.00</span></span></div>
                             <div id="ei-vertex-container" class="flex flex-col gap-3 pt-3 border-t border-m3-outline/20 dark:border-m3-outlineDark/20 mt-2 hidden">
                                 <div class="flex justify-between items-center"><span class="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase tracking-wider">Vertex <span id="ei-v-idx" class="text-gray-800 dark:text-white">1</span> of <span id="ei-v-total">X</span></span><span id="ei-v-z" class="font-mono font-bold text-pama-yellowDark dark:text-pama-yellow bg-pama-yellow/10 px-2 py-0.5 rounded">Z: 0.00</span></div>
                                 <div class="flex gap-2"><button id="ei-btn-prev" class="flex-1 bg-m3-container dark:bg-m3-containerDark hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 rounded-xl text-xs font-bold transition-colors">Prev</button><button id="ei-btn-next" class="flex-1 bg-pama-yellow hover:bg-pama-yellowDark text-pama-black py-2 rounded-xl text-xs font-bold transition-colors shadow-sm">Next</button></div>
@@ -236,6 +247,8 @@
         <div class="max-w-5xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
             <div class="text-xl font-heading font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1"><span class="text-blue-500">D</span><span class="text-red-500">X</span><span class="text-pama-yellow">F</span> <span class="text-gray-500 ml-1 font-normal">Utility</span></div>
             <nav class="flex flex-wrap items-center justify-center md:justify-end gap-x-4 sm:gap-x-6 gap-y-3 text-sm font-medium text-gray-600 dark:text-gray-400">
+                <a href="https://github.com/fikriardyant/dxfocto" target="_blank" rel="noopener noreferrer" class="hover:text-pama-yellow transition-colors">Contribute</a>
+                <button onclick="openFooterModal('Changelog', '<div class=&quot;flex flex-col gap-3 text-left text-sm&quot;><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-4 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 shadow-sm&quot;><h4 class=&quot;font-bold text-gray-900 dark:text-white text-base mb-2&quot;>Latest Features</h4><ul class=&quot;list-disc pl-4 space-y-1.5 text-gray-600 dark:text-gray-300&quot;><li><b>GeoTIFF & KML/KMZ Support:</b> Full offline parsing and rendering.</li><li><b>Drag & Drop:</b> Global overlay for dropping files.</li><li><b>Touch & Rotation:</b> 1-finger pan, 2-finger twist/zoom, compass lock.</li><li><b>Area Calc:</b> Auto-calculate m² and ha for closed boundaries.</li><li><b>Material 3 UI:</b> Updated colors, collapsible menus, and responsive design.</li><li><b>Dynamic Config:</b> Secure, offline config loader for coordinate math.</li></ul></div></div>')" class="hover:text-pama-yellow transition-colors">Changelog</button>
                 <button onclick="openFooterModal('Contact', '<div class=&quot;flex flex-col items-center gap-1 text-center&quot;><div class=&quot;text-lg font-bold text-gray-900 dark:text-white&quot;>Fikri Ardyantoro</div><a href=&quot;mailto:p61230666@pamapersada.net&quot; class=&quot;text-blue-500 hover:underline transition-colors&quot;>p61230666@pamapersada.net</a><a href=&quot;https://wa.me/6281977080999&quot; target=&quot;_blank&quot; class=&quot;mt-2 px-3 py-1.5 bg-m3-surface dark:bg-m3-surfaceDark hover:bg-gray-50 dark:hover:bg-gray-700 border border-m3-outline/20 dark:border-m3-outlineDark/20 rounded-xl font-mono text-sm shadow-sm text-blue-500 hover:underline transition-colors&quot;>081977080999</a></div>')" class="hover:text-pama-yellow transition-colors">Contact</button>
                 <button onclick="openFooterModal('Credit', '<div class=&quot;flex flex-col gap-3&quot;><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Gigih Pambudi</div><div class=&quot;text-xs text-gray-500&quot;>Tester</div></div><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Rendra</div><div class=&quot;text-xs text-gray-500&quot;>Tester on Global Mapper</div></div><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Taufik</div><div class=&quot;text-xs text-gray-500&quot;>Tester</div></div><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Thalya Anggita</div><div class=&quot;text-xs text-gray-500&quot;>Supporter</div></div></div>')" class="hover:text-pama-yellow transition-colors">Credit</button>
                 <button onclick="openFooterModal('Request More Feature', '<div class=&quot;flex flex-col items-center gap-1 text-center&quot;><div class=&quot;text-lg font-bold text-gray-900 dark:text-white&quot;>Fikri Ardyantoro</div><a href=&quot;mailto:p61230666@pamapersada.net&quot; class=&quot;text-blue-500 hover:underline transition-colors&quot;>p61230666@pamapersada.net</a><a href=&quot;https://wa.me/6281977080999&quot; target=&quot;_blank&quot; class=&quot;mt-2 px-3 py-1.5 bg-m3-surface dark:bg-m3-surfaceDark hover:bg-gray-50 dark:hover:bg-gray-700 border border-m3-outline/20 dark:border-m3-outlineDark/20 rounded-xl font-mono text-sm shadow-sm text-blue-500 hover:underline transition-colors&quot;>081977080999</a></div>')" class="hover:text-pama-yellow transition-colors">Request More Feature</button>
@@ -393,7 +406,7 @@
         tabViewerBtn.addEventListener('click', () => {
             tabViewerBtn.classList.add('text-pama-yellow', 'border-pama-yellow'); tabViewerBtn.classList.remove('text-gray-500', 'border-transparent', 'dark:text-gray-400');
             tabConverterBtn.classList.remove('text-pama-yellow', 'border-pama-yellow'); tabConverterBtn.classList.add('text-gray-500', 'border-transparent', 'dark:text-gray-400');
-            tabViewerContent.classList.remove('hidden'); tabViewerContent.classList.add('flex'); tabConverterContent.classList.add('hidden');
+            tabViewerContent.classList.remove('hidden'); tabViewerContent.classList.add('flex'); tabViewerContent.classList.add('hidden');
             drawViewerCanvas(); if(viewerScale === 1 && viewerLoadedDxfs.length > 0) zoomExtentsViewer(); 
         });
 
@@ -923,6 +936,18 @@
         function distToSegmentSquared(p, v, w) { let l2 = dist2(v, w); if (l2 === 0) return dist2(p, v); let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2; t = Math.max(0, Math.min(1, t)); return dist2(p, { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) }); }
         function calculateLength(ent) { let len = 0; if (ent.type === 'Line') { len = Math.sqrt(Math.pow(ent.p2.easting - ent.p1.easting, 2) + Math.pow(ent.p2.northing - ent.p1.northing, 2)); } else { for(let i=0; i<ent.pts.length-1; i++) { len += Math.sqrt(Math.pow(ent.pts[i+1].easting - ent.pts[i].easting, 2) + Math.pow(ent.pts[i+1].northing - ent.pts[i].northing, 2)); } if (ent.shape) { len += Math.sqrt(Math.pow(ent.pts[0].easting - ent.pts[ent.pts.length-1].easting, 2) + Math.pow(ent.pts[0].northing - ent.pts[ent.pts.length-1].northing, 2)); } } return len.toFixed(2); }
 
+        function calculateArea(ent) {
+            if (ent.type === 'Line' || !ent.pts || ent.pts.length < 3) return 0;
+            let area = 0;
+            const pts = ent.pts;
+            for (let i = 0; i < pts.length; i++) {
+                let j = (i + 1) % pts.length;
+                area += pts[i].easting * pts[j].northing;
+                area -= pts[j].easting * pts[i].northing;
+            }
+            return Math.abs(area / 2);
+        }
+
         function handleViewerClick(e) {
             const rect = viewerCanvas.getBoundingClientRect(); const rawMouseX = e.clientX - rect.left; const rawMouseY = e.clientY - rect.top;
             const cx = viewerCanvas.width/2; const cy = viewerCanvas.height/2; const dx_m = rawMouseX - cx; const dy_m = rawMouseY - cy;
@@ -942,6 +967,37 @@
 
         function showEntityInfo() {
             if(!selectedEntity) return; eiType.textContent = selectedEntity.type; eiLength.textContent = calculateLength(selectedEntity);
+            
+            const areaContainer = document.getElementById('ei-area-container');
+            const areaLabel = areaContainer ? areaContainer.querySelector('span:first-child') : null;
+            
+            let isPseudoClosed = false;
+            if (selectedEntity.pts && selectedEntity.pts.length > 2 && !selectedEntity.shape) {
+                const first = selectedEntity.pts[0];
+                const last = selectedEntity.pts[selectedEntity.pts.length - 1];
+                const dist = Math.sqrt(Math.pow(first.easting - last.easting, 2) + Math.pow(first.northing - last.northing, 2));
+                // If start and end points are within 10 meters, consider it an intended boundary
+                if (dist < 10.0) isPseudoClosed = true;
+            }
+
+            if (selectedEntity.shape || isPseudoClosed) {
+                let area = calculateArea(selectedEntity);
+                document.getElementById('ei-area-m2').textContent = area.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                document.getElementById('ei-area-ha').textContent = (area / 10000).toLocaleString('en-US', {minimumFractionDigits: 4, maximumFractionDigits: 4});
+                
+                if (areaLabel) {
+                    if (isPseudoClosed) {
+                        areaLabel.innerHTML = 'Area <span class="text-[9px] text-m3-error dark:text-m3-errorDark block leading-tight">(Unclosed)</span>';
+                    } else {
+                        areaLabel.innerHTML = 'Area:';
+                    }
+                }
+                
+                if(areaContainer) areaContainer.classList.remove('hidden');
+            } else {
+                if(areaContainer) areaContainer.classList.add('hidden');
+            }
+
             if (selectedEntity.type === '3D Polyline') { eiVertexContainer.classList.remove('hidden'); eiElevationContainer.classList.add('hidden'); updateVertexUI(); } 
             else { eiVertexContainer.classList.add('hidden'); eiElevationContainer.classList.remove('hidden'); let elev = 0; if (selectedEntity.type === 'Line') elev = selectedEntity.p1.z; else if (selectedEntity.pts && selectedEntity.pts.length > 0) elev = selectedEntity.pts[0].z; eiElevation.textContent = (elev || 0).toFixed(3); }
             entityInfoCard.classList.remove('hidden');
