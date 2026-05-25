@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DXF Utility</title>
+    <title>DXF Viewer</title>
     
     <script>
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -77,12 +77,12 @@
     <main class="flex-1 flex flex-col p-0 sm:p-4 md:p-6 w-full max-w-[1600px] mx-auto overflow-hidden">
         <div class="flex-1 w-full bg-white dark:bg-gray-900 sm:rounded-[28px] shadow-lg flex flex-col overflow-hidden border-0 sm:border border-gray-100 dark:border-gray-800 relative transition-colors duration-300">
             
-            <div class="shrink-0 bg-pama-black dark:bg-gray-800 p-6 sm:p-8 text-white relative overflow-hidden transition-colors duration-300">
+            <div class="shrink-0 bg-pama-black dark:bg-gray-800 p-4 sm:p-6 text-white relative overflow-hidden transition-colors duration-300">
                 <div class="relative z-10 flex justify-between items-start">
                     <div>
-                        <h1 class="text-3xl sm:text-4xl font-heading font-bold tracking-tight">DXF Utility</h1>
-                        <p class="text-gray-300 mt-2 font-medium text-sm sm:text-base">Local & Global Coordinate system</p>
-                        <div class="mt-4 inline-block bg-white/10 px-4 py-1.5 rounded-full text-xs font-medium tracking-wide">Fikri A Freetime & AI</div>
+                        <h1 class="text-2xl sm:text-3xl font-heading font-bold tracking-tight">DXF Viewer</h1>
+                        <p class="text-gray-300 mt-1 font-medium text-xs sm:text-sm">Local & Global Coordinate system</p>
+                        <div class="mt-2 inline-block bg-white/10 px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium tracking-wide">Fikri A Freetime & AI</div>
                     </div>
                     
                     <!-- Top Right Action Buttons (Theme + Config) -->
@@ -91,10 +91,10 @@
                             <svg id="theme-toggle-dark-icon" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
                             <svg id="theme-toggle-light-icon" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
                         </button>
-                        <button id="top-config-btn" onclick="document.getElementById('config-file-input').click()" class="bg-white/10 hover:bg-white/20 p-2 sm:p-3 rounded-2xl transition-colors backdrop-blur-sm border border-white/10 text-white shadow-lg" title="Upload Config JS File">
+                        <button id="top-config-btn" onclick="openSettingsModal()" class="bg-white/10 hover:bg-white/20 p-2 sm:p-3 rounded-2xl transition-colors backdrop-blur-sm border border-white/10 text-white shadow-lg" title="Open Settings">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                         </button>
-                        <input type="file" id="config-file-input" accept=".js" class="hidden">
+                        <input type="file" id="config-file-input" accept=".json" class="hidden">
                     </div>
                 </div>
                 <div class="absolute -bottom-32 -right-16 w-96 h-96 bg-pama-yellow opacity-40 dark:opacity-20 rounded-full blur-3xl pointer-events-none"></div>
@@ -179,12 +179,25 @@
             <div id="tab-content-converter" class="hidden flex-1 overflow-y-auto p-6 sm:p-8 space-y-6 bg-m3-surface dark:bg-m3-surfaceDark">
                 <div class="max-w-4xl mx-auto space-y-6">
                     <div class="bg-m3-container dark:bg-m3-containerDark rounded-[24px] p-6 border border-m3-outline/10 dark:border-m3-outlineDark/10">
-                        <h2 class="text-lg font-heading font-bold mb-4 text-pama-black dark:text-white flex items-center gap-3">
-                            <span class="bg-pama-yellow text-pama-black w-7 h-7 rounded-full flex items-center justify-center text-sm shadow-sm">1</span> Upload Local DXF File
-                        </h2>
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                            <h2 class="text-lg font-heading font-bold text-pama-black dark:text-white flex items-center gap-3">
+                                <span class="bg-pama-yellow text-pama-black w-7 h-7 rounded-full flex items-center justify-center text-sm shadow-sm">1</span> 
+                                <span id="upload-title-text">Upload Local DXF File</span>
+                            </h2>
+                            
+                            <!-- Conversion Direction Switch -->
+                            <div class="flex items-center gap-2 bg-m3-surface dark:bg-m3-surfaceDark px-3 py-1.5 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 shadow-sm">
+                                <span class="text-xs font-bold text-pama-yellowDark transition-colors" id="lbl-loc-to-glob">Local ➔ Global</span>
+                                <div class="relative inline-block w-10 align-middle select-none">
+                                    <input type="checkbox" id="toggle-conversion-dir" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-transform duration-300 ease-in-out"/>
+                                    <label for="toggle-conversion-dir" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer transition-colors duration-300 ease-in-out"></label>
+                                </div>
+                                <span class="text-xs font-bold text-gray-400 dark:text-gray-500 transition-colors" id="lbl-glob-to-loc">Global ➔ Local</span>
+                            </div>
+                        </div>
                         <div id="drop-zone" class="border-2 border-dashed border-m3-outline/30 dark:border-m3-outlineDark/40 rounded-[20px] p-8 text-center cursor-pointer hover:bg-pama-yellow/10 dark:hover:bg-pama-yellow/10 hover:border-pama-yellow transition-all duration-300">
                             <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                            <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Click to upload or drag Local DXF here</p>
+                            <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Click to upload or drag DXF here</p>
                             <input type="file" id="file-input" accept=".dxf" class="hidden">
                         </div>
                         <div id="file-info" class="hidden mt-4 p-4 bg-m3-surface dark:bg-m3-surfaceDark border border-m3-outline/20 dark:border-m3-outlineDark/20 text-pama-black dark:text-white rounded-[16px] flex justify-between items-center text-sm shadow-sm transition-colors">
@@ -234,7 +247,7 @@
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Export
                                     </button>
                                 </div>
-                                <p id="converter-config-warning" class="hidden mt-3 text-sm font-bold text-m3-error dark:text-m3-errorDark text-center sm:text-right transition-all">⚠️ Please upload a JS config file (top right icon) to convert!</p>
+                                <p id="converter-config-warning" class="hidden mt-3 text-sm font-bold text-m3-error dark:text-m3-errorDark text-center sm:text-right transition-all">⚠️ Please configure settings (top right icon) to convert!</p>
                             </div>
                         </div>
                     </div>
@@ -245,13 +258,11 @@
 
     <footer class="shrink-0 w-full bg-m3-surface dark:bg-m3-surfaceDark border-t border-m3-outline/20 dark:border-m3-outlineDark/20 py-3 sm:py-4 transition-colors">
         <div class="max-w-5xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="text-xl font-heading font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1"><span class="text-blue-500">D</span><span class="text-red-500">X</span><span class="text-pama-yellow">F</span> <span class="text-gray-500 ml-1 font-normal">Utility</span></div>
+            <div class="text-xl font-heading font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1"><span class="text-blue-500">D</span><span class="text-red-500">X</span><span class="text-pama-yellow">F</span> <span class="text-gray-500 ml-1 font-normal">Viewer</span></div>
             <nav class="flex flex-wrap items-center justify-center md:justify-end gap-x-4 sm:gap-x-6 gap-y-3 text-sm font-medium text-gray-600 dark:text-gray-400">
-                <a href="https://github.com/fikriardyant/dxfocto" target="_blank" rel="noopener noreferrer" class="hover:text-pama-yellow transition-colors">Contribute</a>
                 <button onclick="openFooterModal('Changelog', '<div class=&quot;flex flex-col gap-3 text-left text-sm&quot;><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-4 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 shadow-sm&quot;><h4 class=&quot;font-bold text-gray-900 dark:text-white text-base mb-2&quot;>Latest Features</h4><ul class=&quot;list-disc pl-4 space-y-1.5 text-gray-600 dark:text-gray-300&quot;><li><b>GeoTIFF & KML/KMZ Support:</b> Full offline parsing and rendering.</li><li><b>Drag & Drop:</b> Global overlay for dropping files.</li><li><b>Touch & Rotation:</b> 1-finger pan, 2-finger twist/zoom, compass lock.</li><li><b>Area Calc:</b> Auto-calculate m² and ha for closed boundaries.</li><li><b>Material 3 UI:</b> Updated colors, collapsible menus, and responsive design.</li><li><b>Dynamic Config:</b> Secure, offline config loader for coordinate math.</li></ul></div></div>')" class="hover:text-pama-yellow transition-colors">Changelog</button>
-                <button onclick="openFooterModal('Contact', '<div class=&quot;flex flex-col items-center gap-1 text-center&quot;><div class=&quot;text-lg font-bold text-gray-900 dark:text-white&quot;>Fikri Ardyantoro</div><a href=&quot;mailto:p61230666@pamapersada.net&quot; class=&quot;text-blue-500 hover:underline transition-colors&quot;>p61230666@pamapersada.net</a><a href=&quot;https://wa.me/6281977080999&quot; target=&quot;_blank&quot; class=&quot;mt-2 px-3 py-1.5 bg-m3-surface dark:bg-m3-surfaceDark hover:bg-gray-50 dark:hover:bg-gray-700 border border-m3-outline/20 dark:border-m3-outlineDark/20 rounded-xl font-mono text-sm shadow-sm text-blue-500 hover:underline transition-colors&quot;>081977080999</a></div>')" class="hover:text-pama-yellow transition-colors">Contact</button>
-                <button onclick="openFooterModal('Credit', '<div class=&quot;flex flex-col gap-3&quot;><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Gigih Pambudi</div><div class=&quot;text-xs text-gray-500&quot;>Tester</div></div><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Rendra</div><div class=&quot;text-xs text-gray-500&quot;>Tester on Global Mapper</div></div><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Taufik</div><div class=&quot;text-xs text-gray-500&quot;>Tester</div></div><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Thalya Anggita</div><div class=&quot;text-xs text-gray-500&quot;>Supporter</div></div></div>')" class="hover:text-pama-yellow transition-colors">Credit</button>
-                <button onclick="openFooterModal('Request More Feature', '<div class=&quot;flex flex-col items-center gap-1 text-center&quot;><div class=&quot;text-lg font-bold text-gray-900 dark:text-white&quot;>Fikri Ardyantoro</div><a href=&quot;mailto:p61230666@pamapersada.net&quot; class=&quot;text-blue-500 hover:underline transition-colors&quot;>p61230666@pamapersada.net</a><a href=&quot;https://wa.me/6281977080999&quot; target=&quot;_blank&quot; class=&quot;mt-2 px-3 py-1.5 bg-m3-surface dark:bg-m3-surfaceDark hover:bg-gray-50 dark:hover:bg-gray-700 border border-m3-outline/20 dark:border-m3-outlineDark/20 rounded-xl font-mono text-sm shadow-sm text-blue-500 hover:underline transition-colors&quot;>081977080999</a></div>')" class="hover:text-pama-yellow transition-colors">Request More Feature</button>
+                <button onclick="openFooterModal('Contact', '<div class=&quot;flex flex-col items-center gap-1 text-center&quot;><div class=&quot;text-lg font-bold text-gray-900 dark:text-white&quot;>Fikri Ardyantoro</div><a href=&quot;mailto:fikri.ardyantoro@gmail.com&quot; class=&quot;text-blue-500 hover:underline transition-colors&quot;>fikri.ardyantoro@gmail.com</a><a href=&quot;https://wa.me/6281977080999&quot; target=&quot;_blank&quot; class=&quot;mt-2 px-3 py-1.5 bg-m3-surface dark:bg-m3-surfaceDark hover:bg-gray-50 dark:hover:bg-gray-700 border border-m3-outline/20 dark:border-m3-outlineDark/20 rounded-xl font-mono text-sm shadow-sm text-blue-500 hover:underline transition-colors&quot;>081977080999</a></div>')" class="hover:text-pama-yellow transition-colors">Contact</button>
+                <button onclick="openFooterModal('Credit', '<div class=&quot;flex flex-col gap-3&quot;><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Gigih Pambudi</div><div class=&quot;text-xs text-gray-500&quot;>Tester</div></div><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Rendra</div><div class=&quot;text-xs text-gray-500&quot;>Tester on Global Mapper</div></div><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Taufik</div><div class=&quot;text-xs text-gray-500&quot;>Tester</div></div><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Arya</div><div class=&quot;text-xs text-gray-500&quot;>Tester</div></div><div class=&quot;bg-m3-surface dark:bg-m3-surfaceDark p-3 rounded-xl border border-m3-outline/20 dark:border-m3-outlineDark/20 text-center shadow-sm&quot;><div class=&quot;font-bold text-gray-900 dark:text-white&quot;>Thalya Anggita</div><div class=&quot;text-xs text-gray-500&quot;>Supporter</div></div></div>')" class="hover:text-pama-yellow transition-colors">Credit</button>
                 <button onclick="openFooterModal('Traktir Kopi Buat Lembur', '<div class=&quot;flex flex-col items-center gap-4 text-center w-full&quot;><div class=&quot;text-6xl mb-1 drop-shadow-md&quot;>☕</div><div class=&quot;w-full bg-m3-surface dark:bg-m3-surfaceDark p-5 rounded-2xl border border-m3-outline/20 dark:border-m3-outlineDark/20 shadow-sm&quot;><div class=&quot;text-xs uppercase tracking-wider font-bold text-gray-500 mb-2&quot;>Shopeepay</div><div class=&quot;text-2xl font-mono font-bold text-gray-800 dark:text-white block&quot;>081977080999</div></div><div class=&quot;w-full bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-100 dark:border-blue-800/30&quot;><p class=&quot;text-sm font-medium text-blue-800 dark:text-blue-300&quot;>Atau bisa mutasikan ke <span class=&quot;font-bold&quot;>JIEP</span><br>agar lebih bahagia 🏙️</p></div></div>')" class="hover:text-pama-yellow transition-colors">Traktir Kopi Buat Lembur</button>
             </nav>
         </div>
@@ -266,18 +277,69 @@
         </div>
     </div>
 
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/60 dark:bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white dark:bg-gray-900 rounded-[28px] max-w-md w-full p-6 sm:p-8 shadow-2xl relative transition-transform transform scale-100 max-h-full overflow-y-auto border border-gray-100 dark:border-gray-800">
+            
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="bg-pama-yellow/20 p-2 rounded-full text-pama-yellowDark">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-heading font-bold text-gray-900 dark:text-white">Settings</h3>
+                </div>
+                <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-50 dark:bg-gray-800 rounded-full p-2 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Form -->
+            <div class="space-y-4">
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">UTM Zone</label>
+                        <input type="number" id="setting-zone" value="50" class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white font-medium focus:ring-2 focus:ring-pama-yellow focus:border-transparent outline-none transition-colors">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Hemisphere</label>
+                        <select id="setting-hemisphere" class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white font-medium focus:ring-2 focus:ring-pama-yellow focus:border-transparent outline-none appearance-none transition-colors">
+                            <option value="N">North (N)</option>
+                            <option value="S">South (S)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Offset Easting (X)</label>
+                    <input type="number" id="setting-offset-x" value="0" step="any" class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white font-medium focus:ring-2 focus:ring-pama-yellow focus:border-transparent outline-none transition-colors">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Offset Northing (Y)</label>
+                    <input type="number" id="setting-offset-y" value="0" step="any" class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white font-medium focus:ring-2 focus:ring-pama-yellow focus:border-transparent outline-none transition-colors">
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex gap-3 mt-8">
+                <button id="btn-import-json" class="flex-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-xl transition-colors text-sm">Import JSON</button>
+                <button id="btn-save-settings" class="flex-1 bg-pama-yellow hover:bg-pama-yellowDark text-pama-black font-bold py-3 px-4 rounded-xl transition-all shadow-sm hover:shadow-md text-sm">Save Settings</button>
+            </div>
+            
+        </div>
+    </div>
+
     <!-- VIEWER PROMPT MODAL (with Jiggle text) -->
     <div id="coord-prompt-modal" class="fixed inset-0 bg-black/60 dark:bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-m3-surface dark:bg-m3-surfaceDark rounded-[28px] max-w-sm w-full p-8 shadow-2xl text-center max-h-full overflow-y-auto">
             <div class="bg-pama-yellow/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"><svg class="w-8 h-8 text-pama-yellowDark" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
             <h3 class="text-xl font-heading font-bold text-gray-900 dark:text-white mb-2">Select Coordinate System</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-8">Is the file you're adding in Local or Global (UTM 50N) format?</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-8">Is the file you're adding in Local or Global format?</p>
             <div class="flex gap-3 justify-center">
                 <button id="prompt-btn-local" class="flex-1 bg-pama-yellow hover:bg-pama-yellowDark text-pama-black font-bold py-3 px-4 rounded-full transition-colors shadow-sm hover:shadow-md">Local</button>
-                <button id="prompt-btn-global" class="flex-1 bg-gray-800 hover:bg-gray-950 dark:bg-m3-containerDark dark:hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-full transition-colors shadow-sm hover:shadow-md">Global (UTM)</button>
+                <button id="prompt-btn-global" class="flex-1 bg-gray-800 hover:bg-gray-950 dark:bg-m3-containerDark dark:hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-full transition-colors shadow-sm hover:shadow-md">Global</button>
             </div>
             
-            <p id="viewer-config-warning" class="hidden mt-4 text-sm font-bold text-m3-error dark:text-m3-errorDark transition-all">⚠️ Please upload a JS config file (top right icon) first!</p>
+            <p id="viewer-config-warning" class="hidden mt-4 text-sm font-bold text-m3-error dark:text-m3-errorDark transition-all">⚠️ Please configure settings (top right icon) first!</p>
 
             <button id="prompt-btn-cancel" class="mt-6 text-sm font-semibold text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">Cancel</button>
         </div>
@@ -306,7 +368,7 @@
                 <svg class="w-16 h-16 text-pama-yellow animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
             </div>
             <h2 class="text-3xl font-heading font-bold text-gray-900 dark:text-white text-center">Drop File Here</h2>
-            <p class="text-gray-500 dark:text-gray-400 font-medium mt-2 text-center">Config (.js), DXF, KML, KMZ, or TIFF</p>
+            <p class="text-gray-500 dark:text-gray-400 font-medium mt-2 text-center">Config (.json/.js), DXF, KML, KMZ, or TIFF</p>
         </div>
     </div>
 
@@ -327,8 +389,9 @@
             }
         });
 
-        proj4.defs("EPSG:32650", "+proj=utm +zone=50 +datum=WGS84 +units=m +no_defs");
+        // Initialize Proj4 Default
         proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
+        proj4.defs("USER_UTM", "+proj=utm +zone=50 +datum=WGS84 +units=m +no_defs");
 
         // --- SHARED UTILS ---
         function showToast(message, type = 'info') {
@@ -347,28 +410,101 @@
         function openFooterModal(title, content) { footerModalTitle.textContent = title; footerModalContent.innerHTML = content; footerModal.classList.remove('hidden'); }
         function closeFooterModal() { footerModal.classList.add('hidden'); }
 
-        // --- DYNAMIC CONFIG LOADER LOGIC ---
+        // --- DYNAMIC SETTINGS & CONFIG LOGIC ---
+        function openSettingsModal() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function applySettings(zone, hem, ox, oy) {
+            // Re-define the underlying Proj4 map projection
+            proj4.defs("USER_UTM", `+proj=utm +zone=${zone}${hem === 'S' ? ' +south' : ''} +datum=WGS84 +units=m +no_defs`);
+            
+            // Set up the local translation matrix function globally
+            window.transformLocalToGlobal = function(localX, localY) {
+                return { easting: localX + ox, northing: localY + oy };
+            };
+            window.transformGlobalToLocal = function(globalX, globalY) {
+                return { easting: globalX - ox, northing: globalY - oy };
+            };
+
+            // Keep DOM form inputs in sync
+            document.getElementById('setting-zone').value = zone;
+            document.getElementById('setting-hemisphere').value = hem;
+            document.getElementById('setting-offset-x').value = ox;
+            document.getElementById('setting-offset-y').value = oy;
+
+            // Save to localStorage for next session
+            localStorage.setItem('dxf-user-config', JSON.stringify({zone, hemisphere: hem, offsetX: ox, offsetY: oy}));
+
+            // Clear any lingering warnings
+            const warnV = document.getElementById('viewer-config-warning');
+            if(warnV) warnV.classList.add('hidden');
+            const warnC = document.getElementById('converter-config-warning');
+            if(warnC) warnC.classList.add('hidden');
+        }
+
+        // 1. Initial Load from Memory
+        const savedConf = localStorage.getItem('dxf-user-config');
+        if (savedConf) {
+            try {
+                const c = JSON.parse(savedConf);
+                applySettings(c.zone || 50, c.hemisphere || 'N', c.offsetX || 0, c.offsetY || 0);
+            } catch(e) {}
+        }
+
+        // 2. Click "Save Settings"
+        document.getElementById('btn-save-settings').addEventListener('click', () => {
+            const z = parseInt(document.getElementById('setting-zone').value) || 50;
+            const h = document.getElementById('setting-hemisphere').value;
+            const ox = parseFloat(document.getElementById('setting-offset-x').value) || 0;
+            const oy = parseFloat(document.getElementById('setting-offset-y').value) || 0;
+            
+            applySettings(z, h, ox, oy);
+            closeSettingsModal();
+            showToast('Settings Saved', 'success');
+        });
+
+        // 3. Click "Import JSON"
+        document.getElementById('btn-import-json').addEventListener('click', () => {
+            document.getElementById('config-file-input').click();
+        });
+
+        // Process File (Both Legacy .JS and New .JSON)
         function processConfigFile(file) {
             const reader = new FileReader();
             reader.onload = function(evt) {
                 try {
-                    const script = document.createElement('script');
-                    script.textContent = evt.target.result;
-                    document.head.appendChild(script);
-                    
-                    setTimeout(() => {
-                        if (typeof window.transformLocalToGlobal === 'function') {
-                            showToast('Configuration loaded successfully!', 'success');
-                            // Clear warnings if they were showing
-                            const warnV = document.getElementById('viewer-config-warning');
-                            if(warnV) warnV.classList.add('hidden');
-                            const warnC = document.getElementById('converter-config-warning');
-                            if(warnC) warnC.classList.add('hidden');
-                        } else {
-                            showToast('Invalid config.js file', 'error');
-                        }
-                    }, 50);
-                } catch(err) { showToast('Failed to load config', 'error'); }
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    if (ext === 'json') {
+                        const c = JSON.parse(evt.target.result);
+                        applySettings(c.utmZone || c.zone || 50, c.hemisphere || 'N', c.offsetX || 0, c.offsetY || 0);
+                        closeSettingsModal();
+                        showToast('Config loaded from JSON!', 'success');
+                    } else if (ext === 'js') {
+                        // Legacy support for your old config.js files
+                        const script = document.createElement('script');
+                        script.textContent = evt.target.result;
+                        document.head.appendChild(script);
+                        setTimeout(() => {
+                            if (typeof window.transformLocalToGlobal === 'function') {
+                                const offsets = window.transformLocalToGlobal(0, 0);
+                                window.transformGlobalToLocal = function(gX, gY) {
+                                    return { easting: gX - offsets.easting, northing: gY - offsets.northing };
+                                };
+                                // Default legacy projection is 50N
+                                proj4.defs("USER_UTM", "+proj=utm +zone=50 +datum=WGS84 +units=m +no_defs");
+                                showToast('Legacy configuration loaded!', 'success');
+                                const warnV = document.getElementById('viewer-config-warning'); if(warnV) warnV.classList.add('hidden');
+                                const warnC = document.getElementById('converter-config-warning'); if(warnC) warnC.classList.add('hidden');
+                            } else {
+                                showToast('Invalid JS file', 'error');
+                            }
+                        }, 50);
+                    }
+                } catch(err) { showToast('Failed to parse file', 'error'); }
             };
             reader.readAsText(file);
         }
@@ -379,7 +515,7 @@
             e.target.value = ''; 
         });
 
-        function convertUtmToLatLng(easting, northing) { return proj4("EPSG:32650", "EPSG:4326", [easting, northing]); }
+        function convertUtmToLatLng(easting, northing) { return proj4("USER_UTM", "EPSG:4326", [easting, northing]); }
 
         const aciPalette = ["000000", "FF0000", "FFFF00", "00FF00", "00FFFF", "0000FF", "FF00FF", "FFFFFF", "414141", "808080", "FF0000", "FFAAAA", "BD0000", "BD7E7E", "810000", "815656", "680000", "684545", "4F0000", "4F3535", "FF3F00", "FFBFAA", "BD2E00", "BD8D7E", "811F00", "816056", "681900", "684D45", "4F1300", "4F3B35", "FF7F00", "FFD4AA", "BD5E00", "BD9D7E", "814000", "816B56", "683400", "685645", "4F2700", "4F4235", "FFBF00", "FFEAAA", "BD8D00", "BDAE7E", "816000", "817656", "684D00", "685F45", "4F3B00", "4F4835", "FFFF00", "FFFFAA", "BDBD00", "BDBD7E", "818100", "818156", "686800", "686845", "4F4F00", "4F4F35", "BFFF00", "EAFFAA", "8DBD00", "AEBD7E", "608100", "768156", "4D6800", "5F6845", "3B4F00", "484F35", "7FFF00", "D4FFAA", "5EBD00", "9DBD7E", "408100", "6B8156", "346800", "566845", "274F00", "424F35", "3FFF00", "BFFFAA", "2EBD00", "8DBD7E", "1F8100", "608156", "196800", "4D6845", "134F00", "3B4F35", "00FF00", "AAFFAA", "00BD00", "7EBD7E", "008100", "568156", "006800", "456845", "004F00", "354F35", "00FF3F", "AAFFBF", "00BD2E", "7EBD8D", "00811F", "568160", "006819", "45684D", "004F13", "354F3B", "00FF7F", "AAFFD4", "00BD5E", "7EBD9D", "008140", "56816B", "006834", "456856", "004F27", "354F42", "00FFBF", "AAFFEA", "00BD8D", "7EBDAE", "008160", "568176", "00684D", "45685F", "004F3B", "354F48", "00FFFF", "AAFFFF", "00BDBD", "7EBDBD", "008181", "568181", "006868", "456868", "004F4F", "354F4F", "00BFFF", "AAEAFF", "008DBD", "7EAEBD", "006081", "567681", "004D68", "455F68", "003B4F", "35484F", "007FFF", "AAD4FF", "005EBD", "7E9DBD", "004081", "566B81", "003468", "455668", "00274F", "35424F", "003FFF", "AABFFF", "002EBD", "7E8DBD", "001F81", "566081", "001968", "454D68", "00134F", "353B4F", "0000FF", "AAAAFF", "0000BD", "7E7EBD", "000081", "565681", "000068", "454568", "00004F", "35354F", "3F00FF", "BFAAFF", "2E00BD", "8D7EBD", "1F0081", "605681", "190068", "4D4568", "13004F", "3B354F", "7F00FF", "D4AAFF", "5E00BD", "9D7EBD", "400081", "6B5681", "340068", "564568", "27004F", "42354F", "BF00FF", "EAAAFF", "8D00BD", "AE7EBD", "600081", "765681", "4D0068", "5F4568", "3B004F", "48354F", "FF00FF", "FFAAFF", "BD00BD", "BD7EBD", "810081", "815681", "680068", "684568", "4F004F", "4F354F", "FF00BF", "FFAAEA", "BD008D", "BD7EAE", "810060", "815676", "68004D", "68455F", "4F003B", "4F3548", "FF007F", "FFAAD4", "BD005E", "BD7E9D", "810040", "81566B", "680034", "684556", "4F0027", "4F3542", "FF003F", "FFAABF", "BD002E", "BD7E8D", "81001F", "815660", "680019", "68454D", "4F0013", "4F353B", "333333", "505050", "696969", "828282", "9C9C9C", "B5B5B5", "CECECE", "E7E7E7", "FFFFFF"];
 
@@ -390,6 +526,38 @@
             if (aci === 256 || aci === undefined) { const layerName = (entity.layer || '').toUpperCase(); if (layerName && layers[layerName]) { const layer = layers[layerName]; if (layer.trueColor !== undefined) { const r = (layer.trueColor >> 16) & 0xFF; const g = (layer.trueColor >> 8) & 0xFF; const b = layer.trueColor & 0xFF; return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`; } aci = layer.colorNumber !== undefined ? layer.colorNumber : layer.colorIndex; } }
             if (aci === 0) aci = 7; let hexColor = (aci >= 1 && aci <= 255) ? aciPalette[aci] : "FFFFFF"; return `#${hexColor}`;
         }
+
+        // --- CONVERSION DIRECTION LOGIC ---
+        const toggleConvDir = document.getElementById('toggle-conversion-dir');
+        const lblLocToGlob = document.getElementById('lbl-loc-to-glob');
+        const lblGlobToLoc = document.getElementById('lbl-glob-to-loc');
+        const uploadTitleText = document.getElementById('upload-title-text');
+        const exportFormat = document.getElementById('export-format');
+
+        toggleConvDir.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                lblLocToGlob.classList.replace('text-pama-yellowDark', 'text-gray-400');
+                lblLocToGlob.classList.add('dark:text-gray-500');
+                lblGlobToLoc.classList.replace('text-gray-400', 'text-pama-yellowDark');
+                lblGlobToLoc.classList.remove('dark:text-gray-500');
+                uploadTitleText.textContent = 'Upload Global DXF File';
+                
+                Array.from(exportFormat.options).forEach(opt => {
+                    if (opt.value === 'kmz' || opt.value === 'kml') opt.disabled = true;
+                });
+                exportFormat.value = 'dxf';
+            } else {
+                lblGlobToLoc.classList.replace('text-pama-yellowDark', 'text-gray-400');
+                lblGlobToLoc.classList.add('dark:text-gray-500');
+                lblLocToGlob.classList.replace('text-gray-400', 'text-pama-yellowDark');
+                lblLocToGlob.classList.remove('dark:text-gray-500');
+                uploadTitleText.textContent = 'Upload Local DXF File';
+                
+                Array.from(exportFormat.options).forEach(opt => {
+                    opt.disabled = false;
+                });
+            }
+        });
 
         // --- TABS LOGIC ---
         const tabConverterBtn = document.getElementById('tab-btn-converter');
@@ -406,7 +574,7 @@
         tabViewerBtn.addEventListener('click', () => {
             tabViewerBtn.classList.add('text-pama-yellow', 'border-pama-yellow'); tabViewerBtn.classList.remove('text-gray-500', 'border-transparent', 'dark:text-gray-400');
             tabConverterBtn.classList.remove('text-pama-yellow', 'border-pama-yellow'); tabConverterBtn.classList.add('text-gray-500', 'border-transparent', 'dark:text-gray-400');
-            tabViewerContent.classList.remove('hidden'); tabViewerContent.classList.add('flex'); tabViewerContent.classList.add('hidden');
+            tabViewerContent.classList.remove('hidden'); tabViewerContent.classList.add('flex'); tabConverterContent.classList.add('hidden');
             drawViewerCanvas(); if(viewerScale === 1 && viewerLoadedDxfs.length > 0) zoomExtentsViewer(); 
         });
 
@@ -578,22 +746,25 @@
 
         function generateDXF(dxfData) {
             let out = "0\nSECTION\n2\nENTITIES\n"; const isAddAnno = document.getElementById('toggle-annotation').checked; let annotatedPoints = new Set();
+            const isGlobalToLocal = document.getElementById('toggle-conversion-dir').checked;
+            const transformFn = isGlobalToLocal ? window.transformGlobalToLocal : window.transformLocalToGlobal;
+
             if (dxfData && dxfData.entities) {
                 dxfData.entities.forEach((entity) => {
                     let layer = entity.layer || "0"; let color = entity.colorNumber !== undefined ? entity.colorNumber : (entity.colorIndex !== undefined ? entity.colorIndex : 256);
                     let vertices = [];
                     if (entity.type === 'LINE') {
-                        let p1 = window.transformLocalToGlobal(entity.vertices[0].x, entity.vertices[0].y); let p2 = window.transformLocalToGlobal(entity.vertices[1].x, entity.vertices[1].y);
+                        let p1 = transformFn(entity.vertices[0].x, entity.vertices[0].y); let p2 = transformFn(entity.vertices[1].x, entity.vertices[1].y);
                         let z1 = getVertexZ(entity, entity.vertices[0]); let z2 = getVertexZ(entity, entity.vertices[1]);
                         out += `0\nLINE\n8\n${layer}\n62\n${color}\n10\n${p1.easting.toFixed(4)}\n20\n${p1.northing.toFixed(4)}\n30\n${z1.toFixed(4)}\n11\n${p2.easting.toFixed(4)}\n21\n${p2.northing.toFixed(4)}\n31\n${z2.toFixed(4)}\n`;
                         vertices = [ {x: p1.easting, y: p1.northing, z: z1}, {x: p2.easting, y: p2.northing, z: z2} ];
                     } else if (entity.type === 'LWPOLYLINE') {
                         out += `0\nLWPOLYLINE\n8\n${layer}\n62\n${color}\n100\nAcDbEntity\n100\nAcDbPolyline\n90\n${entity.vertices.length}\n70\n${entity.shape ? 1 : 0}\n`; 
                         let elev = entity.elevation || 0; out += `38\n${elev.toFixed(4)}\n`; 
-                        entity.vertices.forEach(v => { let p = window.transformLocalToGlobal(v.x, v.y); out += `10\n${p.easting.toFixed(4)}\n20\n${p.northing.toFixed(4)}\n`; vertices.push({x: p.easting, y: p.northing, z: elev}); });
+                        entity.vertices.forEach(v => { let p = transformFn(v.x, v.y); out += `10\n${p.easting.toFixed(4)}\n20\n${p.northing.toFixed(4)}\n`; vertices.push({x: p.easting, y: p.northing, z: elev}); });
                     } else if (entity.type === 'POLYLINE') {
                         let closedBit = entity.shape ? 1 : 0; out += `0\nPOLYLINE\n8\n${layer}\n62\n${color}\n66\n1\n70\n${8 | closedBit}\n10\n0.0\n20\n0.0\n30\n0.0\n`; 
-                        entity.vertices.forEach(v => { let p = window.transformLocalToGlobal(v.x, v.y); let z = getVertexZ(entity, v); out += `0\nVERTEX\n8\n${layer}\n70\n32\n10\n${p.easting.toFixed(4)}\n20\n${p.northing.toFixed(4)}\n30\n${z.toFixed(4)}\n`; vertices.push({x: p.easting, y: p.northing, z: z}); });
+                        entity.vertices.forEach(v => { let p = transformFn(v.x, v.y); let z = getVertexZ(entity, v); out += `0\nVERTEX\n8\n${layer}\n70\n32\n10\n${p.easting.toFixed(4)}\n20\n${p.northing.toFixed(4)}\n30\n${z.toFixed(4)}\n`; vertices.push({x: p.easting, y: p.northing, z: z}); });
                         out += `0\nSEQEND\n8\n${layer}\n`; 
                     }
                     if (isAddAnno && vertices.length > 0) {
@@ -610,7 +781,7 @@
         document.getElementById('convert-btn').addEventListener('click', async () => {
             if (!parsedDxfData) return;
             
-            // CHECK IF CONFIG IS UPLOADED (NO POPUPS)
+            // CHECK IF CONFIG IS UPLOADED
             if (typeof window.transformLocalToGlobal !== 'function') {
                 const warn = document.getElementById('converter-config-warning');
                 warn.classList.remove('hidden');
@@ -620,7 +791,10 @@
                 return;
             }
 
-            const format = document.getElementById('export-format').value; const baseName = currentFileName ? currentFileName.replace(/\.[^/.]+$/, "") : "local_converted";
+            const format = document.getElementById('export-format').value; 
+            const isGlobalToLocal = document.getElementById('toggle-conversion-dir').checked;
+            const suffix = isGlobalToLocal ? "Local" : "Global";
+            const baseName = currentFileName ? currentFileName.replace(/\.[^/.]+$/, "") : `converted_${suffix}`;
             showToast(`Preparing ${format.toUpperCase()}...`, 'info');
             try {
                 if (format === 'kmz' || format === 'kml') {
@@ -631,7 +805,7 @@
                         const blob = new Blob([kmlContent], { type: "application/vnd.google-earth.kml+xml" }); saveAs(blob, `${baseName}.kml`); showToast('Successfully downloaded KML!', 'success');
                     }
                 } else if (format === 'dxf') {
-                    const newDxfContent = generateDXF(parsedDxfData); const blob = new Blob([newDxfContent], { type: "image/vnd.dxf" }); saveAs(blob, `${baseName}_Global.dxf`); showToast('Successfully downloaded Global DXF!', 'success');
+                    const newDxfContent = generateDXF(parsedDxfData); const blob = new Blob([newDxfContent], { type: "image/vnd.dxf" }); saveAs(blob, `${baseName}_${suffix}.dxf`); showToast(`Successfully downloaded ${suffix} DXF!`, 'success');
                 }
             } catch (error) { console.error(error); showToast('An error occurred while processing data.', 'error'); }
         });
@@ -665,8 +839,6 @@
         function processViewerDropFile(file) {
             pendingViewerFile = file; 
             const ext = file.name.split('.').pop().toLowerCase();
-            
-            // KML/KMZ are naturally Global (Lat/Lon). Bypass prompt and load directly!
             if (ext === 'kml' || ext === 'kmz') {
                 handleKmlKmzFile(pendingViewerFile);
                 pendingViewerFile = null;
@@ -675,7 +847,6 @@
             }
         }
 
-        // Handle DXF, TIFF, KML, KMZ
         viewerFileInput.addEventListener('change', async (e) => {
             if (e.target.files.length) { 
                 processViewerDropFile(e.target.files[0]);
@@ -757,7 +928,7 @@
             } else if (kmlColor.length === 6) { 
                 return `#${kmlColor.substring(4, 6)}${kmlColor.substring(2, 4)}${kmlColor.substring(0, 2)}`;
             }
-            return '#00FFFF'; // Fallback cyan
+            return '#00FFFF'; 
         }
 
         async function handleKmlKmzFile(file) {
@@ -818,7 +989,7 @@
                                 const lat = parseFloat(parts[1]);
                                 const alt = parts.length >= 3 ? parseFloat(parts[2]) : 0;
                                 
-                                const utm = proj4("EPSG:4326", "EPSG:32650", [lon, lat]); // Convert to UTM 50N
+                                const utm = proj4("EPSG:4326", "USER_UTM", [lon, lat]); 
                                 
                                 if (firstZ === null) firstZ = alt;
                                 else if (Math.abs(alt - firstZ) > 0.001) isTruly3D = true;
@@ -845,7 +1016,7 @@
                 viewerLoadedDxfs.push({ id: fileIdCounter++, name: file.name, entities: processedEntities });
                 updateViewerFileListUI(); 
                 zoomExtentsViewer(); 
-                showToast(`${file.name} mapped to UTM 50N`, 'success');
+                showToast(`${file.name} mapped to UTM`, 'success');
 
             } catch (err) {
                 console.error(err);
@@ -976,7 +1147,6 @@
                 const first = selectedEntity.pts[0];
                 const last = selectedEntity.pts[selectedEntity.pts.length - 1];
                 const dist = Math.sqrt(Math.pow(first.easting - last.easting, 2) + Math.pow(first.northing - last.northing, 2));
-                // If start and end points are within 10 meters, consider it an intended boundary
                 if (dist < 10.0) isPseudoClosed = true;
             }
 
@@ -1072,7 +1242,7 @@
                 gpsWatchId = navigator.geolocation.watchPosition(
                     (pos) => {
                         if (isFirstGpsLock) { showToast('GPS Lock Acquired!', 'success'); }
-                        const lat = pos.coords.latitude; const lng = pos.coords.longitude; const utm = proj4("EPSG:4326", "EPSG:32650", [lng, lat]); currentGpsUtm = { easting: utm[0], northing: utm[1] };
+                        const lat = pos.coords.latitude; const lng = pos.coords.longitude; const utm = proj4("EPSG:4326", "USER_UTM", [lng, lat]); currentGpsUtm = { easting: utm[0], northing: utm[1] };
                         if (isFirstGpsLock) { zoomExtentsViewer(); isFirstGpsLock = false; } else { drawViewerCanvas(); }
                     }, 
                     (err) => {
@@ -1132,7 +1302,7 @@
                 const configPrompt = document.getElementById('config-prompt-modal');
                 if (configPrompt) configPrompt.classList.add('hidden');
 
-                if (ext === 'js') {
+                if (ext === 'json' || ext === 'js') {
                     processConfigFile(file);
                 } else if (e.target.closest('#drop-zone') && ext === 'dxf') {
                     // Specific drop on Converter box respects user UX
